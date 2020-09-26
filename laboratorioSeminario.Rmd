@@ -1,13 +1,12 @@
 ---
-title: "6º Seminário Internacional sobre Análise de Dados na Administração Pública"
+title: "Oficina Chicoteando a Máquina para Extrair Dados: como manipular grandes bases em computadores de pouca capacidade"
+subtitle: "6º Seminário Internacional sobre Análise de Dados na Administração Pública" 
 output: html_notebook
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-# Quem somos?
-
 
 # Requisitos
 
@@ -57,40 +56,24 @@ if(!require('data.table')){
   
 * [CBO2002](http://www.mtecbo.gov.br/cbosite/pages/downloads.jsf) 
 
-* Dados da fazenda - Cadastro de inadimplentes ??
+* Dados da fazenda - Cadastro de inadimplentes ?FALTA FONTE?
 
-# Alinhando expectativas
+# Atenção! Caso tenha atualizado o R para a versão 4:
 
 <div style="text-align: justify">
-
-Por tratar-se de um laboratório não é possível verificar todos problemas dos participantes de configuração de ambientes(pedimos desculpa por isso), existem muitas peculiaridades com fogem ao nosso controle.
-  Mas #ficaadica Caso tenha atualizado o R para a versão 4:  
 
 * Atualize o R Studio  
 
 * Atualize o RTools para a versão 4 - Rtools4  
   - Adicione a variável de ambiente no R para que o Rtools4 funcione: `writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")`  
 
-* E alguns pacote que apresentar erro de depêndencia tente usar o  `install.packages("nome do pacote", dependencies = TRUE)`
+* Em alguns pacotes que apresentarem erro de depêndencia, tente usar o  `install.packages("nome do pacote", dependencies = TRUE)`
 
-Pelo das bases de dados a consulta pode demorar alguns minutos, faremos o possível para deixar claro o tempo aproximado de cada uma.
-
-Um dos objetivos deste seminário é mostrar uma abordagem de tantas outras disponibilizadas na academia, documentações, medium e toda a internet ,ou a mistura delas, fruto da prática em outros trabalhos.
-
-Este seminário surgiu com o conhecimento acumulado após  *sofrimento* usando a base de dados de CNPJ da receita  que exige algum recurso computacional para usá-la dada sua extensão. Outra característica interessante e de como os arquivos com os dados foram divulgados e que requer um bom trabalho para deixá-los inteligíveis.
-
-Felizmente nos deparamos com dois trabalhos que acreditamos que deve ajudar muito quem está engajado no uso das bases de dados públicas:
-
-* [Sócios de Empresas Brasileiras](https://github.com/turicas/socios-brasil)
-  - Fonte: Receita Federal do Brasil, dados tratados por Álvaro Justen/Brasil.IO
-* [Pacote que trata e organiza os dados do Cadastro Nacional da Pessoa Jurídica (CNPJ)](https://github.com/georgevbsantiago/qsacnpj#readme)
-  - Fonte: pacote `qsacnpj`
-
-Porem, este laboratório não irá tratar estes dados :( (já foram muito bem trabalhados), mas vamos usá-las, e é aí que as coisas podem ficar complicadas.
+* As consultas podem demorar vários minutos, informaremos o tempo aproximado de cada uma.
 
 <div/>
 
-## Para quem só sabe usar matelo **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
+## Para quem só sabe usar matelo, **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
 <div style="text-align: justify">
 
 Por isso vamos usar R + SQL
@@ -99,14 +82,16 @@ Concordando conosco ...rs , em seu livro [Efficient R Programming](https://csgil
 
 "Instead of loading all the data into RAM, as R does, databases query data from the hard-disk. This can allow a subset of a very large dataset to be defined and read into R quickly, without having to load it first."
 
-Demostrando o quanto pode ser interessante este uso.
+Veja o quanto pode ser interessante este uso.
 
-Sabemos que 80% do tempo do cientista de dados é ajustando os dados, mas além de missing values, outliers e outros problemas que nos deparamos com as bases de dados que tem crescido cada dia mais, e para quem trabalha em R já deve ter lotado a memória com uma uma base mais robusta. E aí até provisionar alguma instância pedir mais memória, jogar estes dados no Spark é possível de remediar as coisas. 
+Sabemos que 80% do tempo do cientista de dados é destinado para ajustar as bases, mas além de missing values, outliers e outros problemas, temos o aumento do volume de dados  disponíveis. 
+Alguns analistas que trabalham em R já devem ter lotado a memória com uma base mais robusta. 
+E aí, até conseguir provisionar alguma instância, pedir mais memória, ou conseguir autorização para usar um servidor de maior capacidade, é possível usar recursos alternativos para progredir com o trabalho. 
 
 <div/>
 
-
-# Mãos na massa
+# Chegou a hora ....
+# Mãos na massa!
 
 Fazer um mix de estudo de caso com os CNAES usados no estudo PIBIC e consultas com sumários com bases nos atributos
   
@@ -122,11 +107,12 @@ Fazer um mix de estudo de caso com os CNAES usados no estudo PIBIC e consultas c
     - Lendo multiplos arquivos (cuidado com o tamanho do arquivo!!) 
       - usando `for` para ler multiplos arquivos
   
-* A memória enxeu e agora ?
+* A memória encheu... E agora?!
   -  
-  - SQL (a sitaxe) - igual companheiro  `selecione e conte as coisas do móvel que estão abertas e agrupe por tipo`!! :)
+  - SQL (a sintaxe) - igual papo doméstico `selecione e conte as coisas do lugar que estão abertas e agrupe por tipo`! :)
+  - -> select count(coisas) from lugar where status="abertas" group by = tipo
   - BDI - API para consulta em bancos
-  - RSQLite - dados parados em disco não incomodam a memória
+  - RSQLite - dados parados em disco não incomodam a memória, então, uma ótima solução para quem tem computador de baixa capacidade.
     - Explicando o Banco
     - Visualizando os dados (DB Explorer)
     - Visualizando os dados do banco (pragma do banco, tabela etc)
@@ -135,10 +121,10 @@ Fazer um mix de estudo de caso com os CNAES usados no estudo PIBIC e consultas c
         * Salvando a query em uma nova tabela (para usar como subquery por exemplo);
         * Salvando a consulta em um data.frame (usar em subquery ou realiza análise no R);
     - Fazendo a ingestão dos dados 1 arquivo
-    - Criar a tabela de itens a serem filtrados
+    - Criando a tabela de itens a serem filtrados
       - Fazendo a ingestão dos dados (multiplos arquivos);
-          - Jogar na memória ;
-          - Imputar os arquivos `APPEND`;
+          - Jogando na memória;
+          - Imputando os arquivos `APPEND`;
             - Passando pela memória (oneroso) sei fazer;
             - Fazendo a ingestão direta, estou no caminho;
   - Me deram conexão para um banco com muitas linhas e muitos recursos (o_O)(mostrar no Oracle) 
