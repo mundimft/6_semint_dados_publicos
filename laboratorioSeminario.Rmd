@@ -1,0 +1,146 @@
+---
+title: "6º Seminário Internacional sobre Análise de Dados na Administração Pública"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Quem somos?
+
+
+# Requisitos
+
+* Linguagem R ;
+* Linguagem SQL ;
+* DB Explorer SQL Lite;
+* [R Base](https://cran.r-project.org/bin/windows/base/) atualizado (4.0.2) - *tem se mostrado mais rápido*;
+
+## Bibliotecas
+
+```{r ativando as bibliotecas, warning=FALSE}
+#Criar um loop aqui
+if(!require('vroom')){
+  install.packages("vroom")
+  library(vroom)
+}
+
+if(!require('RSQLite')){
+  install.packages("RSQLite")
+  library(RSQLite)
+}
+
+if(!require('tidyverse')){
+  install.packages("tidyverse")
+  library(tidyverse)
+}
+
+if(!require('data.table')){
+  install.packages("data.table")
+  library(data.table)
+}
+```
+
+* vroom
+* RSqlite
+* duckdb (ainda em teste)
+* tidyverse
+* data.table
+
+## Bases de dados
+
+* [RFB](https://receita.economia.gov.br/orientacao/tributaria/cadastros/cadastro-nacional-de-pessoas-juridicas-cnpj/dados-publicos-cnpj)
+  - [Dicionário de dados](http://200.152.38.155/CNPJ/LAYOUT_DADOS_ABERTOS_CNPJ.pdf)
+  
+* [MT](http://pdet.mte.gov.br/microdados-rais-e-caged) - **Novo Caged 2020**
+  - [Dicionário de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx)
+  
+* [CBO2002](http://www.mtecbo.gov.br/cbosite/pages/downloads.jsf) 
+
+* Dados da fazenda - Cadastro de inadimplentes ??
+
+# Alinhando expectativas
+
+<div style="text-align: justify">
+
+Por tratar-se de um laboratório não é possível verificar todos problemas dos participantes de configuração de ambientes(pedimos desculpa por isso), existem muitas peculiaridades com fogem ao nosso controle.
+  Mas #ficaadica Caso tenha atualizado o R para a versão 4:  
+
+* Atualize o R Studio  
+
+* Atualize o RTools para a versão 4 - Rtools4  
+  - Adicione a variável de ambiente no R para que o Rtools4 funcione: `writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")`  
+
+* E alguns pacote que apresentar erro de depêndencia tente usar o  `install.packages("nome do pacote", dependencies = TRUE)`
+
+Pelo das bases de dados a consulta pode demorar alguns minutos, faremos o possível para deixar claro o tempo aproximado de cada uma.
+
+Um dos objetivos deste seminário é mostrar uma abordagem de tantas outras disponibilizadas na academia, documentações, medium e toda a internet ,ou a mistura delas, fruto da prática em outros trabalhos.
+
+Este seminário surgiu com o conhecimento acumulado após  *sofrimento* usando a base de dados de CNPJ da receita  que exige algum recurso computacional para usá-la dada sua extensão. Outra característica interessante e de como os arquivos com os dados foram divulgados e que requer um bom trabalho para deixá-los inteligíveis.
+
+Felizmente nos deparamos com dois trabalhos que acreditamos que deve ajudar muito quem está engajado no uso das bases de dados públicas:
+
+* [Sócios de Empresas Brasileiras](https://github.com/turicas/socios-brasil)
+  - Fonte: Receita Federal do Brasil, dados tratados por Álvaro Justen/Brasil.IO
+* [Pacote que trata e organiza os dados do Cadastro Nacional da Pessoa Jurídica (CNPJ)](https://github.com/georgevbsantiago/qsacnpj#readme)
+  - Fonte: pacote `qsacnpj`
+
+Porem, este laboratório não irá tratar estes dados :( (já foram muito bem trabalhados), mas vamos usá-las, e é aí que as coisas podem ficar complicadas.
+
+<div/>
+
+## Para quem só sabe usar matelo **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
+<div style="text-align: justify">
+
+Por isso vamos usar R + SQL
+
+Concordando conosco ...rs , em seu livro [Efficient R Programming](https://csgillespie.github.io/efficientR/) Colin Gillespie e Robin Lovelace falam sobre o uso de bancos de dados com o R no [capitulo 6](https://csgillespie.github.io/efficientR/data-carpentry.html) - *6.6 Working with databases*:
+
+"Instead of loading all the data into RAM, as R does, databases query data from the hard-disk. This can allow a subset of a very large dataset to be defined and read into R quickly, without having to load it first."
+
+Demostrando o quanto pode ser interessante este uso.
+
+Sabemos que 80% do tempo do cientista de dados é ajustando os dados, mas além de missing values, outliers e outros problemas que nos deparamos com as bases de dados que tem crescido cada dia mais, e para quem trabalha em R já deve ter lotado a memória com uma uma base mais robusta. E aí até provisionar alguma instância pedir mais memória, jogar estes dados no Spark é possível de remediar as coisas. 
+
+<div/>
+
+
+# Mãos na massa
+
+Fazer um mix de estudo de caso com os CNAES usados no estudo PIBIC e consultas com sumários com bases nos atributos
+  
+* Download 
+  -  
+    - Baixando 1 arquivo  
+    - Baixando multiplos arquivos  
+      - usando `for` para baixar muitos arquivos 
+* Leitura (usar microbench para avaliar os métodos de entrada)  
+  -  
+    - Lendo 1 arquivo (data.table, vroom)
+      -object.size() - ver o tamanho dos itens em memória
+    - Lendo multiplos arquivos (cuidado com o tamanho do arquivo!!) 
+      - usando `for` para ler multiplos arquivos
+  
+* A memória enxeu e agora ?
+  -  
+  - SQL (a sitaxe) - igual esposa  `selecione e conte as coisas do móvel que estão abertas e agrupe por tipo`!! :)
+  - BDI - API para consulta em bancos
+  - RSQLite - dados parados em disco não incomodam a memória
+    - Explicando o Banco
+    - Visualizando os dados (DB Explorer)
+    - Visualizando os dados do banco (pragma do banco, tabela etc)
+    - Visalizando os dados no banco (evitar full-scan) `LIMIT X`
+    - Fazendo a ingestão dos dados - 1 data frame;
+        * Salvando a query em uma nova tabela (para usar como subquery por exemplo);
+        * Salvando a consulta em um data.frame (usar em subquery ou realiza análise no R);
+    - Fazendo a ingestão dos dados 1 arquivo
+    - Criar a tabela de itens a serem filtrados
+      - Fazendo a ingestão dos dados (multiplos arquivos);
+          - Jogar na memória ;
+          - Imputar os arquivos `APPEND`;
+            - Passando pela memória (oneroso) sei fazer;
+            - Fazendo a ingestão direta, estou no caminho;
+  - Me deram conexão para um banco com muitas linhas e muitos recursos (o_O)(mostrar no Oracle) 
+  - Bonus Track - DuckDB (banco otimizado para uso analítico) - Não sei se vou conseguir implantar a tempo. 
+          
