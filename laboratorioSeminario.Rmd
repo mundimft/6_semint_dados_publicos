@@ -124,7 +124,7 @@ Fazer um mix de estudo de caso com os CNAES usados no estudo PIBIC e consultas c
   
 * A memória enxeu e agora ?
   -  
-  - SQL (a sitaxe) - igual esposa  `selecione e conte as coisas do móvel que estão abertas e agrupe por tipo`!! :)
+  - SQL (a sitaxe) - igual companheiro  `selecione e conte as coisas do móvel que estão abertas e agrupe por tipo`!! :)
   - BDI - API para consulta em bancos
   - RSQLite - dados parados em disco não incomodam a memória
     - Explicando o Banco
