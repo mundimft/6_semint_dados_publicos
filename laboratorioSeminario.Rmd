@@ -112,7 +112,12 @@ Fazer um mix de estudo de caso com os CNAES usados no estudo PIBIC e consultas c
   - SQL (a sintaxe) - igual papo doméstico `selecione e conte as coisas do lugar que estão abertas e agrupe por tipo`! :)
   - -> select count(coisas) from lugar where status="abertas" group by = tipo
   - BDI - API para consulta em bancos
+  # https://db.rstudio.com/dbi/
+  
   - RSQLite - dados parados em disco não incomodam a memória, então, uma ótima solução para quem tem computador de baixa capacidade.
+  # https://www.sqlite.org/index.html
+  # https://cran.r-project.org/web/packages/RSQLite/RSQLite.pdf
+  
     - Explicando o Banco
     - Visualizando os dados (DB Explorer)
     - Visualizando os dados do banco (pragma do banco, tabela etc)
