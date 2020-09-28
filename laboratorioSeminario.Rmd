@@ -42,7 +42,6 @@ if(!require('data.table')){
 
 * vroom
 * RSqlite
-* duckdb (ainda em teste)
 * tidyverse
 * data.table
 
@@ -51,16 +50,15 @@ if(!require('data.table')){
 * [RFB](https://receita.economia.gov.br/orientacao/tributaria/cadastros/cadastro-nacional-de-pessoas-juridicas-cnpj/dados-publicos-cnpj)
   - [Dicionário de dados](http://200.152.38.155/CNPJ/LAYOUT_DADOS_ABERTOS_CNPJ.pdf)
   
-* [MT](http://pdet.mte.gov.br/microdados-rais-e-caged) - **Novo Caged 2020**
+* [SEPT - Secreatia especial de Previdência e Trabalho](http://pdet.mte.gov.br/microdados-rais-e-caged) - **Novo Caged 2020**
   - [Dicionário de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx)
   
 * [CBO2002](http://www.mtecbo.gov.br/cbosite/pages/downloads.jsf) 
 
-* Dados da fazenda - Cadastro de inadimplentes ?FALTA FONTE?
+* [PGFN](http://dadosabertos.pgfn.gov.br/)
 
 # Atenção! Caso tenha atualizado o R para a versão 4:
 
-<div style="text-align: justify">
 
 * Atualize o R Studio  
 
@@ -71,7 +69,7 @@ if(!require('data.table')){
 
 * As consultas podem demorar vários minutos, informaremos o tempo aproximado de cada uma.
 
-<div/>
+
 
 ## Para quem só sabe usar matelo, **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
 <div style="text-align: justify">
@@ -90,10 +88,214 @@ E aí, até conseguir provisionar alguma instância, pedir mais memória, ou con
 
 <div/>
 
-# Chegou a hora ....
-# Mãos na massa!
+# Chegou a hora .... Mãos na massa!
 
-Fazer um mix de estudo de caso com os CNAES usados no estudo PIBIC e consultas com sumários com bases nos atributos
+**Plano de ataque**
+
+Nosso objetivo será fazer uma consulta realizando um sumário de 3 bases de dados diferentes que não caberiam na memória.
+ 
+Vamos baixar dos dados, verificar alguns detalhes que podem aparecer, corrigir pequenos problemas que aparecem. Depois disso vamos criar um banco de dados para receber as bases de dados. Faremos 2 métodos de ingestão destes dados no banco: diretamente do data.frame e por arquivo compactado. De posse de um banco populado com os dados necessários realizaremos as consultas.
+
+## Baixando os dados
+
+<div style="text-align: justify">
+
+A primeira situação que nos deparamos é baixar as bases, são diferentes fontes **(http, ftp)**, disponibilizadas de diferentes formas **(csv, zip, gz)**, além da quantidade que pode variar, 1 arquivo por período, 1 arquivo com todos os dados.
+
+Será disponibilizado um link alternativo de download das bases, uma quantidade de conexões simultânea solicitando o arquivo pode ser interpretado como um comportamento anormal.
+
+### Baixando 1 arquivo 
+
+**PGFN**  
+As base de dados da [PGFN](http://dadosabertos.pgfn.gov.br/) contem os dados dos devedores do FGTS, previdênciários e não previdênciários, são arquivos compactados pelo tema (FGTS, Previdênciário ...) contendo arquivos **csv** para cada estado com competência mensal.
+
+Será criada uma pasta para armazenar estes downloads para facilitar a posteior leitura
+
+```{r Download dados PGFN, eval=FALSE}
+## Dados de dividas
+#diretorio para amazenamento
+dir.create("./divida")
+
+#PGFN Divida Ativa Geral - site está fora do ar e este arquivo é maior base - talvez trabalharemos somente com o FGTS
+#download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_Nao_Previdenciario.zip", "./divida/Dados_abertos_Nao_Previdenciario.zip", method = "wininet")
+
+#Divida FGTS - conforme documentação testar o método WB (Windows)
+download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_FGTS.zip", "./divida/Dados_abertos_FGTS.zip", method = "auto")
+
+#Divida Previdenciaria
+
+#download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_Previdenciario.zip", "./divida/Dados_abertos_Previdenciario.zip", method = "auto")
+
+#tamanho da base 1Gb
+
+```
+
+Foram baixados `r ` Mb de dados compactados
+
+
+### Baixando multiplos arquivos
+
+**Novo Caged**
+
+Os microdados do [CAGED](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/2020/) são fornecidos ao público por um ftp aberto em que os dados são dispostos em pastas por mês e cada pasta contem arquivos em formato **.7z** :( de todo o ano calendário. Faremos a leitura de todo o diretório e o download dos arquivos em pasta específica do tema.
+
+```{r Download dados CAGED, eval=FALSE}
+#Dados do CAGED
+#diretorio para armazenamento
+dir.create("./caged")
+
+#FTP de acesso para os microdados
+#atencao o mês foi especificiado manualmente, até a confeção deste, os dados do mês de agosto não foram disponibilizados.
+url = "ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/2020/Julho/"
+filenames = getURL(url, ftp.use.epsv = FALSE, dirlistonly = TRUE)
+filenames <- strsplit(filenames, "\r\n")
+filenames = unlist(filenames)
+
+filenames
+
+#laço baixando todos os arquivos dentro da pasta 
+for (filename in filenames) {
+  download.file(paste(url, filename, sep = ""), paste(getwd(), "/caged/", filename,
+                                                      sep = ""), method = "curl")
+}
+
+#cuidado com o metodo ao baixar do FTP o metodo pode corromper o arquivo  
+```
+
+Foram baixados `r ` Mb de dados compactados.
+
+### Atenção - Grande base de dados
+
+**CNPJ´s**
+
+Este download será da maior base de dados desta oficina, são 2.4 Gb compactados, nesta oficina 2 momentos requerem um tempo razoável de processamento o download desta base e a sua passagem para o banco de dados. O tempo de download pode variar conforme a velocidade de sua internet e o tempo de processamento conforme as especificações de seu computador . Sendo assim, será disponibilizado um link com o banco em sqlite já com a base de cnpj´s e na ingestão dos dados será apresentado um exemplo de carga desta base.
+
+[Link para download do sqlite com os dados dos CNPJ´s - 3.5Gb - ZIP]() - publicar um drive com este arquivo
+
+```{r Download dados CNPJs, eval=FALSE}
+#Este chunk está desativado, sugerimos baixar a base do link acima e salvar na raiz do projeto. 
+#Ative-o somente caso tenha tempo para aguardar o download da base e sua ingestão.
+#todos os cnpjs e cnaes e cnaes Secundários
+dir.create("./cnpj")
+
+#maior base de dados 2.5Gb o tempo pode variar bem confome o a conexão
+download.file("https://data.brasil.io/dataset/socios-brasil/empresa.csv.gz", "./cnpj/empresa.csv.gz", method = "auto")
+```
+
+O chunk acima não está ativo, recomenda-se que baixem o banco já tratado e realizem o download e a ingestão destes dados em uma base com um pouco mais de tempo.
+
+Terminamos assim a primeira chicotada, baixamos diferentes bases de dados em tamanho e características, agora estes arquivos serão trabalhados para que seja possível obter algum resultado.
+
+## Leitura dos dados
+
+Com os dados baixados, começa a jornada para de lê-los e ajustá-los . 
+
+### Lendo 1 arquivo
+
+**PGFN**
+O arquivo com os dados da PGFN com as dívidas do FGTS será lido e passado para um data.frame, usaremos o pacote *vroom* 
+
+```{r Leitura dados PGFN, eval= FALSE }
+#primeira pegadinha, o VROOM pode ser muito rápido, porem se você tiver multiplos arquivos dentro do zip ele precisa de uma ajudinha
+dados_fgts_com_vroom <- vroom("./divida/Dados_abertos_FGTS.zip") # aqui temos 1170 Observacoes 
+
+head(dados_fgts_com_vroom)
+```
+
+Conforme apresentado o arquivo compactado que estamos tratando possui um *.csv* para cada estado e a quantidade de **1170** observações não parece condizer com a quantidade de empresas inscritas em divida com no FGTS, bem como, os caracteres quebrados podem dificultar as manipulações dos dados. A base foi disponiblizada com caracteres que precisaremos informar para o pacote para que sejam apresentados. 
+Outro detalhe é que precisaremos criar uma função que lerá todos os arquivos dentro do *.zip* e passe cada 1 para o *vroom* e assim passá-los para um data.frame.
+
+```{r Leitura dados FGTS, eval= FALSE}
+##Instrução para ler os caractereres corratamete
+locale_padrao_pt <- locale("pt", encoding = "latin1")
+
+
+#Criando um wrapper para ler todos os dados dentro do arquivo para o VROOM ler de forma correta
+ler_arquivos_dentro_zip <- function(file, ...) {
+  nome_dos_arquivos <- unzip(file, list = TRUE)$Name
+  vroom(purrr::map(nome_dos_arquivos, ~ unz(file, .x)), locale = locale_padrao_pt,   ...)
+}
+
+#passando para o wrapper o caminho do arquivo para leitura de todos os dados
+tic()
+leitura_direta_vroom <- ler_arquivos_dentro_zip("./divida/Dados_abertos_FGTS.zip")
+toc()
+
+```
+
+Agora que cada arquivo foi passado ao *vroom* e depositado em um data.frame contabilizou-se mais de 440 mil observações, bem diferente do primeiro valor contabilizado
+
+
+### Lendo multiplos arquivos
+
+Os microdados do CAGED impõem algumas limitações. Ao verificar o [dicionario de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx) o nomes dos atributos foram escritos com acentuação e espaços e os arquivos são compactados em formato *.7z*. Para a primeira situação realizaremos o tratamento dos atributos, quanto ao formato recomendamos , para o andamento desta ofician, que vá na pasta `caged` do projeto e extraia os arquivos :( .
+
+```{r Leitura dados CAGED, eval = FALSE}
+tic()
+#criando uma lista com arquivos txt no diretório
+caged_lista_arquivos <- fs::dir_ls("./caged/", glob = "*txt")
+#realizando a leitura dos dados  forçando a coluna saldo movimentação com inteiro e demais colunas como caracater
+caged_movimentacao <- vroom(caged_lista_arquivos, col_types = list(.default = "c", saldomovimentação = "i" ))
+toc()
+```
+
+Realizamos a leitura de mais de 16 milhões de linhas com 24 colunas e a carga de mais dados pode começar a ficar difícil. Dando continuidade trataremos os nomes da s colunas retirando os espaços, acentuação para trabalhar com estes dados.
+
+```{r Tratando nomes das colunas CAGED, eval= FALSE}
+caged_movimentacao %>%
+ names() %>% #pega os nomes das colunas
+   stri_trans_general("Latin-ASCII") %>% # substitui caracteres latin para ascii
+   str_replace_all(c(" " = "_")) -> names(caged_movimentacao) #troca espaço por _
+names(caged_movimentacao)
+```
+
+Com os nomes padronizados estamos com mais uma base pronta .
+
+```{r Criando o banco de dados, include=FALSE}
+#criando o banco, caso ele exista será somente anexado 
+con <- dbConnect(RSQLite::SQLite(), "meu_primeiro_banco.db")
+```
+
+
+### Atenção - Grande base de dados
+
+Caso vocÊ tenha baixado a base em *sqlite* já com os dados da receita este passo é não deve ser realizado, inclusive recomendamos não realizá-lo durante a oficina pois pode durar mais de 50 minutos. Porem, para fins de aprendizado, disponbilizados o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
+
+**O chunk abaixo está desativado**
+```{r Criando o banco cnpj, eval= FALSE}
+#esta funcao e necessaria para alterar o tratamento de entrada dos dados das colunas, se não foi feito desta maneira os dados entram em formado que não será
+#possível executar as queries
+tabela_temp_streaming_cnpj <- function() {
+  streamable_table(
+    function(file, ...) readr::read_csv(file,col_types = list(.default = "c"),  ...),
+    function(x, path, omit_header)
+      readr::write_tsv(x = x, path = path, omit_header = omit_header),
+    "tsv")
+}
+
+
+tic()
+#unark pega arquivo gz passa para uma tabela de streaming gera aquivos de 100000 linhas  e passa para o banco sqlite
+unark("./cnpj/empresa.csv.gz", con, lines=100000, streamable_table = tabela_temp_streaming_cnpj() )
+toc()
+```
+
+
+# Com todas estas bases a memória pode encher, e agora?
+
+Os dataset vão aparecendo, as necessidade vão aumentando de agregar mais variáveis e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj 
+
+
+
+
+
+
+
+
+
+Baixado os dados 
+
+<div/>
   
 * Download 
   -  
@@ -133,5 +335,5 @@ Fazer um mix de estudo de caso com os CNAES usados no estudo PIBIC e consultas c
             - Passando pela memória (oneroso) sei fazer;
             - Fazendo a ingestão direta, estou no caminho;
   - Me deram conexão para um banco com muitas linhas e muitos recursos (o_O)(mostrar no Oracle) 
-  - Bonus Track - DuckDB (banco otimizado para uso analítico) - Não sei se vou conseguir implantar a tempo. 
+  - Bonus Track - DuckDB (banco otimizado para uso analítico) - Não sei se vou conseguir implantar a tempo.
           

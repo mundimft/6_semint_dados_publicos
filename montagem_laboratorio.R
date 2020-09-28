@@ -3,9 +3,14 @@ library(RCurl)
 library(vroom)
 library(data.table)
 library(RSQLite)
+library(DBI)
 library(tictoc)
 library(fs)
 library(pryr)
+library(stringi)
+library(stringr)
+library(dplyr)
+library(arkdb)
 
 #library(googledrive) # verrificar se baixar o arquivo direto do google melhora a situação
 
@@ -90,15 +95,16 @@ toc()
 #Criando um wrapper para ler todos os dados dentro do arquivo para o VROOM ler de forma correta
 ler_arquivos_dentro_zip <- function(file, ...) {
   nome_dos_arquivos <- unzip(file, list = TRUE)$Name
-  vroom(purrr::map(nome_dos_arquivos, ~ unz(file, .x)), locale = locale_padrao_pt,  ...)
+  vroom(purrr::map(nome_dos_arquivos, ~ unz(file, .x)), locale = locale_padrao_pt,   ...)
 }
 
+#lembrara de remover pontos e tracos do cnpj fara a realizacao das consultas no sqlite
 tic()
 leitura_direta_vroom <- ler_arquivos_dentro_zip("./divida/Dados_abertos_FGTS.zip")
 toc()
 
 tic()
-leitura_direta_fread <- data.table::fread("unzip -cq ./divida/Dados_abertos_FGTS.zip")
+leitura_direta_fread <- data.table::fread("unzip -cq ./divida/Dados_abertos_FGTS.zip", encoding = "Latin-1")
 toc()
 
 #Qunato temos de dados baixados
@@ -114,34 +120,82 @@ tamanho_diretorio <- (sum(file.info(list.files(".", all.files = TRUE, recursive 
 #descompacte todos os arquivos baixados da base na pasta caged
 tic()
 caged_lista_arquivos <- fs::dir_ls("./caged/", glob = "*txt")
-caged_movimentacao <- vroom(caged_lista_arquivos)
+caged_movimentacao <- vroom(caged_lista_arquivos, col_types = list(.default = "c", saldomovimentação = "i" ))
 toc() # aproximadamente 5 segundo para gerar agrupar os dados 
 
 mem_used()
 #carregando a lista de movimentação do caged deste ano (jan a jul) consumimos  321Mb de memória 
 
-dplyr::glimpse(caged_movimentacao)
+
+
 
 #Porem temos que ler todos e passar para o banco
 
-str(caged_movimentacao)
+
 
 ###
 #* A memória pode encher e agora ?
 #  -  
 #  - SQL (a sitaxe) - igual companheiro  `selecione e conte as coisas do móvel que estão abertas e agrupe por tipo`!! :)
 #- BDI - API para consulta em bancos
-#- RSQLite - dados parados em disco não incomodam a memória
+#- RSQLite - dados em disco não incomodam a memória
+
+
 #- Explicando o Banco
+#aqui os dados serão apresentados 
 #- Visualizando os dados (DB Explorer)
 #- Visualizando os dados do banco (pragma do banco, tabela etc)
 #- Visalizando os dados no banco (evitar full-scan) `LIMIT X`
+
+
+##Como criar este banco, como vamos agrupar todos os dados. 
+
+#crinado o seu primeiro banco de dados
+
+
+ con <- dbConnect(RSQLite::SQLite(), "meu_primeiro_banco.db")
+ 
+ 
+ 
+ #lembrar sempre de disconectar do banco
+ dbDisconnect(con)
+
 #- Fazendo a ingestão dos dados - 1 data frame;
+ 
+#como já carregamos os dados na memória de algumas bases vamos passar estes dados para o banco sql
+
+ #porem antes de passar estes dados para o banco vamos verificar os nomes das colunas para nao psssar caracteres acentuados pois dificultam as queryes
+caged_movimentacao %>%
+ names() %>%
+   stri_trans_general("Latin-ASCII") %>%
+   str_replace_all(c(" " = "_")) %>%
+   toupper() -> names(caged_movimentacao) 
+
+
+ 
+ tic()
+#fazendo a ingestão da tabela de CNAE´s
+dbWriteTable(con,
+            "db_caged_movimentao",
+            caged_movimentacao)
+toc()
+#231 segundos para a ingestão dos dados com tipo Chr custa tempo passar tudo como texto. será necessário analisar os tipos dos campos
+# 45 segundos para ingestão destes dados
+
+
+#Importamos um data.frame, porem temos arquivos que estão zipados que gostaíamos de importar sem enviar para a memóra e este é o desfio 
+
+
+dbDisconnect(con)
+
+
+
 #* Salvando a query em uma nova tabela (para usar como subquery por exemplo);
 #* Salvando a consulta em um data.frame (usar em subquery ou realiza análise no R);
 #- Fazendo a ingestão dos dados 1 arquivo
 #- Criar a tabela de itens a serem filtrados
 #- Fazendo a ingestão dos dados (multiplos arquivos);
+  # Criar index e testar a performance
 #- Jogar na memória ;
 #- Imputar os arquivos `APPEND`;
 #- Passando pela memória (oneroso) sei fazer;
