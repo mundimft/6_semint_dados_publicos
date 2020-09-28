@@ -11,6 +11,7 @@ library(stringi)
 library(stringr)
 library(dplyr)
 library(arkdb)
+library(tm)
 
 #library(googledrive) # verrificar se baixar o arquivo direto do google melhora a situação
 
@@ -131,6 +132,7 @@ mem_used()
 
 #Porem temos que ler todos e passar para o banco
 
+removePunctuation(dados_fgts_com_vroom$CPF_CNPJ) -> dados_fgts_com_vroom$CPF_CNPJ
 
 
 ###

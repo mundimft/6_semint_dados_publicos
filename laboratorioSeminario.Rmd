@@ -164,11 +164,18 @@ for (filename in filenames) {
 
 Foram baixados `r ` Mb de dados compactados.
 
-### Atenção - Grande base de dados
+### Atenção - Base CNPJ
 
 **CNPJ´s**
 
-Este download será da maior base de dados desta oficina, são 2.4 Gb compactados, nesta oficina 2 momentos requerem um tempo razoável de processamento o download desta base e a sua passagem para o banco de dados. O tempo de download pode variar conforme a velocidade de sua internet e o tempo de processamento conforme as especificações de seu computador . Sendo assim, será disponibilizado um link com o banco em sqlite já com a base de cnpj´s e na ingestão dos dados será apresentado um exemplo de carga desta base.
+Conforme indicamos no início da oficina a base de CNPJ foi disponibilizada já em formato SQLite para download. 
+
+Respeitando o licenciamento da base levamos a conhecimento:
+
+A licença do código é [LGPL3](https://www.gnu.org/licenses/lgpl-3.0.en.html) e dos dados convertidos [Creative Commons Attribution ShareAlike](https://creativecommons.org/licenses/by-sa/4.0/). Fonte original e quem tratou os dados:Receita Federal do Brasil, dados tratados por Álvaro Justen/[Brasil.IO](https://brasil.io/).
+
+Das tabelas dispobilizada mantivemos somente a que continha todos os CNPJ´s, de qualquer forma caso tenha curiosidade de ver como foi feita a montagem deste banco em sqlite  teremos um chunk mais abaixo **que está inativo** - ` eval=FALSE` que realiza o processo de ingestão dos dados caso tenha mais um tempinho.
+
 
 [Link para download do sqlite com os dados dos CNPJ´s - 3.5Gb - ZIP]() - publicar um drive com este arquivo
 
@@ -181,8 +188,6 @@ dir.create("./cnpj")
 #maior base de dados 2.5Gb o tempo pode variar bem confome o a conexão
 download.file("https://data.brasil.io/dataset/socios-brasil/empresa.csv.gz", "./cnpj/empresa.csv.gz", method = "auto")
 ```
-
-O chunk acima não está ativo, recomenda-se que baixem o banco já tratado e realizem o download e a ingestão destes dados em uma base com um pouco mais de tempo.
 
 Terminamos assim a primeira chicotada, baixamos diferentes bases de dados em tamanho e características, agora estes arquivos serão trabalhados para que seja possível obter algum resultado.
 
@@ -200,6 +205,7 @@ O arquivo com os dados da PGFN com as dívidas do FGTS será lido e passado para
 dados_fgts_com_vroom <- vroom("./divida/Dados_abertos_FGTS.zip") # aqui temos 1170 Observacoes 
 
 head(dados_fgts_com_vroom)
+nrow(dados_fgts_com_vroom)
 ```
 
 Conforme apresentado o arquivo compactado que estamos tratando possui um *.csv* para cada estado e a quantidade de **1170** observações não parece condizer com a quantidade de empresas inscritas em divida com no FGTS, bem como, os caracteres quebrados podem dificultar as manipulações dos dados. A base foi disponiblizada com caracteres que precisaremos informar para o pacote para que sejam apresentados. 
@@ -224,11 +230,21 @@ toc()
 ```
 
 Agora que cada arquivo foi passado ao *vroom* e depositado em um data.frame contabilizou-se mais de 440 mil observações, bem diferente do primeiro valor contabilizado
+```{r Verificando o dados da base FGTS}
+head(leitura_direta_vroom)
+nrow(leitura_direta_vroom)
+```
+
+Por fim nestes dados o campo **CPF_CNPJ** está com a máscara, e para a realização das consultas iremos retirá-la
+```{r Retirar máscara do CNPJ}
+#funcao do pacote tm que remove pontuacao
+removePunctuation(leitura_direta_vroom$CPF_CNPJ) -> leitura_direta_vroom$CPF_CNPJ
+```
 
 
 ### Lendo multiplos arquivos
 
-Os microdados do CAGED impõem algumas limitações. Ao verificar o [dicionario de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx) o nomes dos atributos foram escritos com acentuação e espaços e os arquivos são compactados em formato *.7z*. Para a primeira situação realizaremos o tratamento dos atributos, quanto ao formato recomendamos , para o andamento desta ofician, que vá na pasta `caged` do projeto e extraia os arquivos :( .
+Ao se trabalhar com os  microdados do CAGED temos alguns percalços. Ao verificar o [dicionario de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx) os nomes das colunas foram escritos com acentuação e os arquivos são compactados em formato *.7z*. Para a primeira situação realizaremos o tratamento das colunas, quanto ao formato recomendamos ,quanto a compactação dos arquivos, para o andamento desta oficina, que vá na pasta `caged` do projeto e extraia os arquivos :( .
 
 ```{r Leitura dados CAGED, eval = FALSE}
 tic()
@@ -238,33 +254,44 @@ caged_lista_arquivos <- fs::dir_ls("./caged/", glob = "*txt")
 caged_movimentacao <- vroom(caged_lista_arquivos, col_types = list(.default = "c", saldomovimentação = "i" ))
 toc()
 ```
+Verificando o nome das colunas :
 
-Realizamos a leitura de mais de 16 milhões de linhas com 24 colunas e a carga de mais dados pode começar a ficar difícil. Dando continuidade trataremos os nomes da s colunas retirando os espaços, acentuação para trabalhar com estes dados.
+```{r Verificando o nome das colunas caged}
+names(caged_movimentacao)
+```
+
+Realizamos a leitura de mais de 16 milhões de linhas com 24 colunas e a carga de mais dados pode começar a ficar difícil. Dando continuidade trataremos os nomes das colunas retirando os espaços, acentuação para trabalhar com estes dados.
+
 
 ```{r Tratando nomes das colunas CAGED, eval= FALSE}
+#Tratando os nomes
 caged_movimentacao %>%
- names() %>% #pega os nomes das colunas
-   stri_trans_general("Latin-ASCII") %>% # substitui caracteres latin para ascii
-   str_replace_all(c(" " = "_")) -> names(caged_movimentacao) #troca espaço por _
-names(caged_movimentacao)
+  names() %>% #pega os nomes das colunas
+  stri_trans_general("Latin-ASCII")  -> names(caged_movimentacao)  # substitui caracteres latin para asci
+ 
 ```
 
 Com os nomes padronizados estamos com mais uma base pronta .
 
-```{r Criando o banco de dados, include=FALSE}
-#criando o banco, caso ele exista será somente anexado 
-con <- dbConnect(RSQLite::SQLite(), "meu_primeiro_banco.db")
+
+```{r Nomes das colunas do CAGED }
+#Verificando o numero de linhas
+nrow(caged_movimentacao)
+#verificando a nomenclatura das colunas
+names(caged_movimentacao)
 ```
 
-
-### Atenção - Grande base de dados
+#### Atenção - Base de CNPJ - Passo Opcional
 
 Caso vocÊ tenha baixado a base em *sqlite* já com os dados da receita este passo é não deve ser realizado, inclusive recomendamos não realizá-lo durante a oficina pois pode durar mais de 50 minutos. Porem, para fins de aprendizado, disponbilizados o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
 
 **O chunk abaixo está desativado**
 ```{r Criando o banco cnpj, eval= FALSE}
-#esta funcao e necessaria para alterar o tratamento de entrada dos dados das colunas, se não foi feito desta maneira os dados entram em formado que não será
-#possível executar as queries
+#criando conexão com o banco
+con <- dbConnect(RSQLite::SQLite(), "meu_primeiro_banco.db")
+
+#esta funcao e necessaria para alterar o tratamento de entrada dos dados das colunas.
+#e criada uma tabela de streamming que lê o arquivo e repassar para o arquivo sqlite
 tabela_temp_streaming_cnpj <- function() {
   streamable_table(
     function(file, ...) readr::read_csv(file,col_types = list(.default = "c"),  ...),
@@ -273,22 +300,92 @@ tabela_temp_streaming_cnpj <- function() {
     "tsv")
 }
 
-
 tic()
 #unark pega arquivo gz passa para uma tabela de streaming gera aquivos de 100000 linhas  e passa para o banco sqlite
 unark("./cnpj/empresa.csv.gz", con, lines=100000, streamable_table = tabela_temp_streaming_cnpj() )
 toc()
+
+#lembrar sempre de disconectar do banco
+dbDisconnect(con)
 ```
 
 
 # Com todas estas bases a memória pode encher, e agora?
 
-Os dataset vão aparecendo, as necessidade vão aumentando de agregar mais variáveis e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj 
+Os dados vão aparecendo, as necessidades de agregar mais variáveis vai aumentando e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompatá-lo são mais de 8Gb que você deveria carregar na memória.
+
+# SQLITE
+PATRICIA
+  - SQL (a sintaxe) - igual papo doméstico `selecione e conte as coisas do lugar que estão abertas e agrupe por tipo`! :)
+  - -> select count(coisas) from lugar where status="abertas" group by = tipo
+  - BDI - API para consulta em bancos
+  # https://db.rstudio.com/dbi/
+  
+  - RSQLite - dados parados em disco não incomodam a memória, então, uma ótima solução para quem tem computador de baixa capacidade.
+  # https://www.sqlite.org/index.html
+  # https://cran.r-project.org/web/packages/RSQLite/RSQLite.pdf
+
+Chegamos no ápice da oficina, dismistificado o assunto, agora que foram visualizados dados que já estavam em um banco, criaremos um conforme as nossas necessidades.
+
+## Criando o banco ou abrindo um existente
+
+Para criar um novo arquivo que receberá o banco ou ler um existente a sintaxe é a mesma e o código se encarrega de entender se o arquivo já existe ou não.
+
+```{r Conexao com o banco RSQLite}
+#Pasando para uma variável as instruções de conexao e driver - atencao para o nome do arquivo
+con <- dbConnect(RSQLite::SQLite(), "meu_primeiro_banco.db")
+```
+
+Ao executar o chunk acima o R está conectado com este arquivo e usando a API do DBI pode passar instruções  para que o RSQLite processe, inclusive em SQL !
+
+Como temos um banco populado, alem de verificar com o dbExplorer, podemos verificar pelo R. Como a conexão acima já foi realizada ela está ativa e você pode passar a instrução diretamente, porem, ao final de seu código lembre sempre de fechar a conexão com o banco.
 
 
+```{r Verificando as tabelas do banco}
+#listando as tabelas do banco
+dbListTables(con)
+```
 
+Assim como fazemos no R podemos verificar quais campos esta tabela possui.
 
+```{r Verificando os campos da tabela}
+dbListFields(con, "empresa")
+```
 
+Vamos olhar os dados desta tabela 
+
+```{r Verificando os dados da tabela}
+primeira_query_empresa <- dbGetQuery(con, "select * from empresa limit 10") #LIMIT é importante !!!
+primeira_query_empresa
+```
+
+Veja que abaixo do nome do campo o tipo dele é apresentado **<chr>**, o cuidado com o tipo de variável é extremamente importante.
+
+E quantos registros temos nesta tabela
+
+```{r Contando registros da tabela empresa}
+tic()
+contagem_registros_empresa <- dbGetQuery(con, "select count(*) from empresa")
+toc()
+contagem_registros_empresa
+```
+Para varrer toda a tabela e contar todos os registros foi necessário um tempo, Leve em consideração este tempo para o desenho e estratégia das consultas.
+
+Rapidamente, fizemos uma pequena exploratória no banco, temos mais de **44 milhões* de registos com 32 colunas cada. E temos mais duas tabelas em memória que usaremos para interagir com a tabela *empresa* 
+
+## Realizando carga de 1 data.frame
+
+Como conseguimos realizar a leitura dos arquivos da dívida do **FGTS** vamos realizar a ingestão dele no banco.
+
+```{r Carga tabela divida FGTS}
+tic()
+dbWriteTable(con, #conexão com o banco
+             "divida_fgts",#nome da tabela no banco
+             leitura_direta_vroom) #nnome do data.frame
+toc()
+```
+
+Tem-se agora duas tabelas no 
 
 
 
