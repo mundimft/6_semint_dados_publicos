@@ -180,13 +180,7 @@ Das tabelas dispobilizada mantivemos somente a que continha todos os CNPJ´s, de
 [Link para download do sqlite com os dados dos CNPJ´s - 3.5Gb - ZIP]() - publicar um drive com este arquivo
 
 ```{r Download dados CNPJs, eval=FALSE}
-#Este chunk está desativado, sugerimos baixar a base do link acima e salvar na raiz do projeto. 
-#Ative-o somente caso tenha tempo para aguardar o download da base e sua ingestão.
-#todos os cnpjs e cnaes e cnaes Secundários
-dir.create("./cnpj")
 
-#maior base de dados 2.5Gb o tempo pode variar bem confome o a conexão
-download.file("https://data.brasil.io/dataset/socios-brasil/empresa.csv.gz", "./cnpj/empresa.csv.gz", method = "auto")
 ```
 
 Terminamos assim a primeira chicotada, baixamos diferentes bases de dados em tamanho e características, agora estes arquivos serão trabalhados para que seja possível obter algum resultado.
@@ -228,6 +222,8 @@ leitura_direta_vroom <- ler_arquivos_dentro_zip("./divida/Dados_abertos_FGTS.zip
 toc()
 
 ```
+
+**LEMBRA DE EXCLUIR O CAMPO NOME_DEVEDOR E TROCAR PARA DATA.TABLE**
 
 Agora que cada arquivo foi passado ao *vroom* e depositado em um data.frame contabilizou-se mais de 440 mil observações, bem diferente do primeiro valor contabilizado
 ```{r Verificando o dados da base FGTS}
@@ -281,12 +277,22 @@ nrow(caged_movimentacao)
 names(caged_movimentacao)
 ```
 
-#### Atenção - Base de CNPJ - Passo Opcional
+#### Atenção - Base de CNPJ - Para fazer fora da oficina
 
 Caso vocÊ tenha baixado a base em *sqlite* já com os dados da receita este passo é não deve ser realizado, inclusive recomendamos não realizá-lo durante a oficina pois pode durar mais de 50 minutos. Porem, para fins de aprendizado, disponbilizados o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
 
 **O chunk abaixo está desativado**
 ```{r Criando o banco cnpj, eval= FALSE}
+#Este chunk está desativado. 
+#Ative-o somente caso tenha tempo para aguardar o download da base e sua ingestão.
+#todos os cnpjs 
+dir.create("./cnpj")
+
+#maior base de dados 2.5Gb o tempo pode variar bem confome o a conexão
+download.file("https://data.brasil.io/dataset/socios-brasil/empresa.csv.gz", "./cnpj/empresa.csv.gz", method = "auto")
+
+
+
 #criando conexão com o banco
 con <- dbConnect(RSQLite::SQLite(), "meu_primeiro_banco.db")
 
@@ -315,7 +321,7 @@ dbDisconnect(con)
 Os dados vão aparecendo, as necessidades de agregar mais variáveis vai aumentando e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompatá-lo são mais de 8Gb que você deveria carregar na memória.
 
 # SQLITE
-PATRICIA
+PATRICIA  
   - SQL (a sintaxe) - igual papo doméstico `selecione e conte as coisas do lugar que estão abertas e agrupe por tipo`! :)
   - -> select count(coisas) from lugar where status="abertas" group by = tipo
   - BDI - API para consulta em bancos
@@ -348,13 +354,13 @@ dbListTables(con)
 
 Assim como fazemos no R podemos verificar quais campos esta tabela possui.
 
-```{r Verificando os campos da tabela}
+```{r Verificando os campos da tabela empresa}
 dbListFields(con, "empresa")
 ```
 
 Vamos olhar os dados desta tabela 
 
-```{r Verificando os dados da tabela}
+```{r Verificando os dados da tabela empresa}
 primeira_query_empresa <- dbGetQuery(con, "select * from empresa limit 10") #LIMIT é importante !!!
 primeira_query_empresa
 ```
@@ -377,7 +383,7 @@ Rapidamente, fizemos uma pequena exploratória no banco, temos mais de **44 milh
 
 Como conseguimos realizar a leitura dos arquivos da dívida do **FGTS** vamos realizar a ingestão dele no banco.
 
-```{r Carga tabela divida FGTS}
+```{r Carga tabela divida_fgts}
 tic()
 dbWriteTable(con, #conexão com o banco
              "divida_fgts",#nome da tabela no banco
@@ -385,9 +391,47 @@ dbWriteTable(con, #conexão com o banco
 toc()
 ```
 
-Tem-se agora duas tabelas no 
+Agora com duas tabelas, o cenário começa a ficar um pouco mais robusto, porem, sem carregar na memória, podemos inclusive excluir o data frame com os dados do fgts.
 
+```{r Verificando novamente as tabelas}
+# Verificando as tabelas
+dbListTables(con)
+```
+ Consultando os campos da tabela
+```{r Verificando os campos da tabela divida_fgts}
+#Verificando os campos da tabela
+dbListFields(con, "divida_fgts")
+```
 
+Consultando os primeiros registros
+
+```{r Verificando os dados da tabela divida_fgts }
+dbGetQuery(con, "select * from divida_fgts limit 10")
+```
+ 
+Falta uma tabela a `caged_movimentacao` inclusive ela tem uma boa quantidade de registros. Para fixar o conhecimento vamos realizar mais uma carga de dados.
+
+```{r Carga tabela movimentacao_caged}
+tic()
+dbWriteTable(con,
+             "movimentacao_caged",
+             caged_movimentacao)
+toc()
+```
+
+Agora temos um banco com 3 tabelas completas de nossa oficina. Caso precise, por exemplo, disponibilizar os dados para estudo os mesmo já estão agrupados em um único arquivo. Você pode compactá-lo e disponibilizar e passar adiante.
+
+**Verificar no dbExplorer**
+
+```{r Verificando todas as tabelas}
+dbListTables(con)
+```
+
+## Trabalhando as consultas
+
+As primeiras consultas em sql que foram feitas equivalem a um `head()`, porem, precisamos filtrar os dados, trabalhar com eles. 
+
+8230001, 9319101, 5620102, 7220004, 8230001,
 
 
 Baixado os dados 

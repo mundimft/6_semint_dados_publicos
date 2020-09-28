@@ -1,5 +1,4 @@
 library(RCurl)
-
 library(vroom)
 library(data.table)
 library(RSQLite)
