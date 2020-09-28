@@ -57,3 +57,21 @@ AS (SELECT *
     WHERE id > 1000);"
 
 ""
+
+
+select subclasse, sum(saldomovimentacao) from movimentacao_caged
+where subclasse in (8230001, 8230002)
+group by subclasse
+
+select cnae_fiscal, count(*) from empresa
+where cnae_fiscal in (8230001, 9319101, 5620102, 7220004, 8230002)
+group by cnae_fiscal
+
+select  cnae_fiscal,sum(valor_consolidado), count(*) from divida_fgts
+left join lista_cnpj on divida_fgts.CPF_CNPJ = lista_cnpj.cnpj
+where CPF_CNPJ in (select cnpj from lista_cnpj)
+group by cnae_fiscal
+
+select  cnae_fiscal,count(*) from divida_fgts
+left join lista_cnpj on divida_fgts.CPF_CNPJ = lista_cnpj.cnpj
+where CPF_CNPJ in (select cnpj from lista_cnpj)

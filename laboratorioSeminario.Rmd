@@ -50,11 +50,9 @@ if(!require('data.table')){
 * [RFB](https://receita.economia.gov.br/orientacao/tributaria/cadastros/cadastro-nacional-de-pessoas-juridicas-cnpj/dados-publicos-cnpj)
   - [Dicionário de dados](http://200.152.38.155/CNPJ/LAYOUT_DADOS_ABERTOS_CNPJ.pdf)
   
-* [SEPT - Secreatia especial de Previdência e Trabalho](http://pdet.mte.gov.br/microdados-rais-e-caged) - **Novo Caged 2020**
+* [SEPT - Secretaia Especial de Previdência e Trabalho](http://pdet.mte.gov.br/microdados-rais-e-caged) - **Novo Caged 2020**
   - [Dicionário de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx)
   
-* [CBO2002](http://www.mtecbo.gov.br/cbosite/pages/downloads.jsf) 
-
 * [PGFN](http://dadosabertos.pgfn.gov.br/)
 
 # Atenção! Caso tenha atualizado o R para a versão 4:
@@ -67,7 +65,7 @@ if(!require('data.table')){
 
 * Em alguns pacotes que apresentarem erro de depêndencia, tente usar o  `install.packages("nome do pacote", dependencies = TRUE)`
 
-* As consultas podem demorar vários minutos, informaremos o tempo aproximado de cada uma.
+* As consultas que vamos realizar podem demorar algum tempo, manteremos vocÊs informados.
 
 
 
@@ -82,7 +80,7 @@ Concordando conosco ...rs , em seu livro [Efficient R Programming](https://csgil
 
 Veja o quanto pode ser interessante este uso.
 
-Sabemos que 80% do tempo do cientista de dados é destinado para ajustar as bases, mas além de missing values, outliers e outros problemas, temos o aumento do volume de dados  disponíveis. 
+Dizem que 80% do tempo do cientista de dados é destinado para ajustar as bases, mas além de missing values, outliers e outros problemas, temos o aumento do volume de dados  disponíveis. 
 Alguns analistas que trabalham em R já devem ter lotado a memória com uma base mais robusta. 
 E aí, até conseguir provisionar alguma instância, pedir mais memória, ou conseguir autorização para usar um servidor de maior capacidade, é possível usar recursos alternativos para progredir com o trabalho. 
 
@@ -94,7 +92,7 @@ E aí, até conseguir provisionar alguma instância, pedir mais memória, ou con
 
 Nosso objetivo será fazer uma consulta realizando um sumário de 3 bases de dados diferentes que não caberiam na memória.
  
-Vamos baixar dos dados, verificar alguns detalhes que podem aparecer, corrigir pequenos problemas que aparecem. Depois disso vamos criar um banco de dados para receber as bases de dados. Faremos 2 métodos de ingestão destes dados no banco: diretamente do data.frame e por arquivo compactado. De posse de um banco populado com os dados necessários realizaremos as consultas.
+Vamos baixar dos dados, verificar alguns detalhes que podem aparecer e corrigir pequenos problemas . Depois disso vamos criar um banco de dados para receber as bases de dados. Faremos a ingestão destes dados no banco: diretamente do data.frame . De posse de um banco populado com os dados necessários realizaremos as consultas.
 
 ## Baixando os dados
 
@@ -102,7 +100,7 @@ Vamos baixar dos dados, verificar alguns detalhes que podem aparecer, corrigir p
 
 A primeira situação que nos deparamos é baixar as bases, são diferentes fontes **(http, ftp)**, disponibilizadas de diferentes formas **(csv, zip, gz)**, além da quantidade que pode variar, 1 arquivo por período, 1 arquivo com todos os dados.
 
-Será disponibilizado um link alternativo de download das bases, uma quantidade de conexões simultânea solicitando o arquivo pode ser interpretado como um comportamento anormal.
+Será disponibilizado um link alternativo de download das bases, uma quantidade de conexões simultânea solicitando o arquivo nos servidores  pode ser interpretado como um comportamento anormal ou ataque. Desculpe!
 
 ### Baixando 1 arquivo 
 
@@ -179,15 +177,12 @@ Das tabelas dispobilizada mantivemos somente a que continha todos os CNPJ´s, de
 
 [Link para download do sqlite com os dados dos CNPJ´s - 3.5Gb - ZIP]() - publicar um drive com este arquivo
 
-```{r Download dados CNPJs, eval=FALSE}
 
-```
-
-Terminamos assim a primeira chicotada, baixamos diferentes bases de dados em tamanho e características, agora estes arquivos serão trabalhados para que seja possível obter algum resultado.
+Terminamos assim o dowload dos aquivos, baixamos diferentes bases de dados em tamanho e características, agora estes arquivos serão trabalhados para que seja possível obter algum resultado.
 
 ## Leitura dos dados
 
-Com os dados baixados, começa a jornada para de lê-los e ajustá-los . 
+Com os dados baixados, começa a jornada para de lê-los e ajustá-los ou vice-versa . 
 
 ### Lendo 1 arquivo
 
@@ -197,6 +192,8 @@ O arquivo com os dados da PGFN com as dívidas do FGTS será lido e passado para
 ```{r Leitura dados PGFN, eval= FALSE }
 #primeira pegadinha, o VROOM pode ser muito rápido, porem se você tiver multiplos arquivos dentro do zip ele precisa de uma ajudinha
 dados_fgts_com_vroom <- vroom("./divida/Dados_abertos_FGTS.zip") # aqui temos 1170 Observacoes 
+
+dados_fgts_com_vroom<-dados_fgts_com_vroom[,-4] #RETIRANDO O NOME DA EMPRESA
 
 head(dados_fgts_com_vroom)
 nrow(dados_fgts_com_vroom)
@@ -227,6 +224,7 @@ toc()
 
 Agora que cada arquivo foi passado ao *vroom* e depositado em um data.frame contabilizou-se mais de 440 mil observações, bem diferente do primeiro valor contabilizado
 ```{r Verificando o dados da base FGTS}
+leitura_direta_vroom <- leitura_direta_vroom[,-4] #RETIRANDO O NOME DA EMPRESA
 head(leitura_direta_vroom)
 nrow(leitura_direta_vroom)
 ```
@@ -279,7 +277,7 @@ names(caged_movimentacao)
 
 #### Atenção - Base de CNPJ - Para fazer fora da oficina
 
-Caso vocÊ tenha baixado a base em *sqlite* já com os dados da receita este passo é não deve ser realizado, inclusive recomendamos não realizá-lo durante a oficina pois pode durar mais de 50 minutos. Porem, para fins de aprendizado, disponbilizados o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
+Aqui temos um trabalho para você realizar **depois da oficina** que é fazer a carga dos dados de todas as empresas no banco sqlite em sua máquiba, lembre-se recomendamos não realizá-lo durante a oficina pois pode durar mais de 50 minutos. Porem, para fins de aprendizado, disponbilizados o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
 
 **O chunk abaixo está desativado**
 ```{r Criando o banco cnpj, eval= FALSE}
@@ -318,7 +316,7 @@ dbDisconnect(con)
 
 # Com todas estas bases a memória pode encher, e agora?
 
-Os dados vão aparecendo, as necessidades de agregar mais variáveis vai aumentando e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompatá-lo são mais de 8Gb que você deveria carregar na memória.
+Os dados vão aparecendo, a necessidade de agregar mais variáveis ou pegar algum atributo de outra base e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompatá-lo são mais de 8Gb que você deveria carregar na memória.
 
 # SQLITE
 PATRICIA  
@@ -331,7 +329,7 @@ PATRICIA
   # https://www.sqlite.org/index.html
   # https://cran.r-project.org/web/packages/RSQLite/RSQLite.pdf
 
-Chegamos no ápice da oficina, dismistificado o assunto, agora que foram visualizados dados que já estavam em um banco, criaremos um conforme as nossas necessidades.
+Chegamos no ápice da oficina, agora que foram visualizados dados que já estavam em um banco, criaremos um conforme as nossas necessidades.
 
 ## Criando o banco ou abrindo um existente
 
