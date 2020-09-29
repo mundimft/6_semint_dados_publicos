@@ -10,12 +10,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Requisitos
 
-* Conhecimento inguagem R ;
-* Conhecimento Linguagem SQL ;
-* DB Explorer SQL Lite;
-* [R Base](https://cran.r-project.org/bin/windows/base/) atualizado (4.0.2) - *tem se mostrado mais rápido*;
+* Conhecimento básico da Linguagem R
+* Conhecimento básico da Linguagem SQL
+* Download do DB Explorer SQL Lite;
+* Download do [R Base](https://cran.r-project.org/bin/windows/base/) atualizado (4.0.2) - *tem se mostrado mais rápido*;
 
-## Bibliotecas
+## Principais Bibliotecas
+
+* vroom
+* RSqlite
+* tidyverse
+* data.table
 
 ```{r ativando as bibliotecas, warning=FALSE}
 #Criar um loop aqui
@@ -40,12 +45,8 @@ if(!require('data.table')){
 }
 ```
 
-* vroom
-* RSqlite
-* tidyverse
-* data.table
 
-## Bases de dados
+## Bases de dados que utilizamos
 
 * [RFB](https://receita.economia.gov.br/orientacao/tributaria/cadastros/cadastro-nacional-de-pessoas-juridicas-cnpj/dados-publicos-cnpj)
   - [Dicionário de dados](http://200.152.38.155/CNPJ/LAYOUT_DADOS_ABERTOS_CNPJ.pdf)
@@ -55,59 +56,60 @@ if(!require('data.table')){
   
 * [PGFN](http://dadosabertos.pgfn.gov.br/)
 
-# Atenção! Caso tenha atualizado o R para a versão 4:
+# Importante! Caso tenha atualizado o R para a versão 4, fique atento e siga esses passos:
 
 
-* Atualize o R Studio  
+* 1) Atualize o R Studio  
 
-* Atualize o RTools para a versão 4 - Rtools4  
+* 2) Atualize o RTools para a versão 4 - Rtools4  
   - Adicione a variável de ambiente no R para que o Rtools4 funcione: `writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")`  
 
-* Em alguns pacotes que apresentarem erro de depêndencia, tente usar o  `install.packages("nome do pacote", dependencies = TRUE)`
+* 3) Se em alguns pacotes apresentarem erro de depêndencia, tente usar o  `install.packages("nome do pacote", dependencies = TRUE)`
 
-* As consultas que vamos realizar podem demorar algum tempo, manteremos vocÊs informados.
+* 4) As consultas que vamos realizar podem demorar algum tempo, manteremos vocês informados.(?)
 
 
 
-## Para quem só sabe usar matelo, **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
+## Para quem só sabe usar martelo, **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
 <div style="text-align: justify">
+... nosso martelo é leve (SQL) e já temos um pouquinho de experiência com a linguagem (R) que aprendemos na escola...
+--> Por isso vamos usar SQL + R
 
-Por isso vamos usar R + SQL
-
-Concordando conosco ...rs , em seu livro [Efficient R Programming](https://csgillespie.github.io/efficientR/) Colin Gillespie e Robin Lovelace falam sobre o uso de bancos de dados com o R no [capitulo 6](https://csgillespie.github.io/efficientR/data-carpentry.html) - *6.6 Working with databases*:
+"Concordando conosco..." rsrs , em seu livro [Efficient R Programming](https://csgillespie.github.io/efficientR/) Colin Gillespie e Robin Lovelace falam sobre o uso de bancos de dados com o R no [capitulo 6](https://csgillespie.github.io/efficientR/data-carpentry.html) - *6.6 Working with databases*:
 
 "Instead of loading all the data into RAM, as R does, databases query data from the hard-disk. This can allow a subset of a very large dataset to be defined and read into R quickly, without having to load it first."
 
-Veja o quanto pode ser interessante este uso.
+Veja só o quanto pode ser interessante este uso:
 
 Dizem que 80% do tempo do cientista de dados é destinado para ajustar as bases, mas além de missing values, outliers e outros problemas, temos o aumento do volume de dados  disponíveis. 
-Alguns analistas que trabalham em R já devem ter lotado a memória com uma base mais robusta. 
-E aí, até conseguir provisionar alguma instância, pedir mais memória, ou conseguir autorização para usar um servidor de maior capacidade, é possível usar recursos alternativos para progredir com o trabalho. 
+Alguns analistas que trabalham em R já devem ter lotado a memória com uma base mais robusta. #quemnunca?
+E aí, até conseguir provisionar alguma instância, pedir mais memória, ou conseguir autorização para usar um servidor de maior capacidade... ufa! É possível usar recursos alternativos para progredir com o trabalho.
 
 <div/>
 
-# Chegou a hora .... Mãos na massa!
+# Agora sim chegou a hora .... Mãos na massa!
 
 **Plano de ataque**
 
-Nosso objetivo será fazer uma consulta realizando um sumário de 3 bases de dados diferentes que não caberiam na memória.
+Para atingir os objetivos da Oficina, vamos percorrer uma jornada que nos levará a realizar uma consulta, produzindo um sumário de 3 bases de dados diferentes que não caberiam na memória. Esse é o desafio que enfrentaremos conjuntamente.
  
-Vamos baixar dos dados, verificar alguns detalhes que podem aparecer e corrigir pequenos problemas . Depois disso vamos criar um banco de dados para receber as bases de dados. Faremos a ingestão destes dados no banco: diretamente do data.frame . De posse de um banco populado com os dados necessários realizaremos as consultas.
+Vamos baixar dos dados, verificar alguns detalhes que podem aparecer e, principalmente, corrigir problemas. Depois disso, vamos criar um banco de dados para receber as bases. Faremos a ingestão destes dados no banco diretamente do data.frame. De posse de um banco populado com os dados necessários, realizaremos as consultas. 
 
-## Baixando os dados
+Vamos buscar fazer isso de forma bem simples e didática.
+
+## Fase 1 - Baixando os dados
 
 <div style="text-align: justify">
 
 A primeira situação que nos deparamos é baixar as bases, são diferentes fontes **(http, ftp)**, disponibilizadas de diferentes formas **(csv, zip, gz)**, além da quantidade que pode variar, 1 arquivo por período, 1 arquivo com todos os dados.
 
-Disponibilizamos link alternativo de download das bases, uma quantidade de conexões simultânea solicitando o arquivo nos servidores  pode ser interpretado como um comportamento anormal. Desculpe!
+Disponibilizamos link alternativo de download das bases no início da Oficina, já que uma quantidade de conexões simultâneas pode ser interpretado como um comportamento anormal... E estamos em treinamento, certo? Tentamos retirar as variáveis inesperadas de nossa equação pedagógica.
 
-### Baixando 1 arquivo 
+### Baixando a **base da PGFN** -> 1 arquivo 
 
-**PGFN**  
-As base de dados da [PGFN](http://dadosabertos.pgfn.gov.br/) contem os dados dos devedores do FGTS, previdênciários e não previdênciários, são arquivos compactados pelo tema (FGTS, Previdênciário ...) contendo arquivos **csv** para cada estado com competência mensal.
+As base de dados da [PGFN](http://dadosabertos.pgfn.gov.br/) contém os dados dos devedores do FGTS, previdênciários e não previdênciários. São arquivos compactados pelo tema (FGTS, Previdenciário ...) contendo arquivos **csv** para cada estado, com competência mensal.
 
-Será criada uma pasta para armazenar estes downloads para facilitar a posteior leitura
+Será criada uma pasta para armazenar estes downloads para facilitar a posteior leitura:
 
 ```{r Download dados PGFN, eval=FALSE}
 ## Dados de dividas
@@ -122,9 +124,7 @@ download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_FGTS.zip", "./divid
 Foram baixados 13 Mb de dados compactados
 
 
-### Baixando multiplos arquivos
-
-**Novo Caged**
+### Baixando a **base do Novo Caged** --> multiplos arquivos
 
 Os microdados do [CAGED](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/2020/) são fornecidos ao público por um ftp aberto em que os dados são dispostos em pastas por mês e cada pasta contem arquivos em formato **.7z** :( de todo o ano calendário. Faremos a leitura de todo o diretório e o download dos arquivos em pasta específica do tema.
 
@@ -153,29 +153,26 @@ for (filename in filenames) {
 
 Foram baixados 182 Mb de dados compactados.
 
-### Atenção - Base CNPJ
+### Baixando a **base CNPJ da RF** (#sqn)
 
-**CNPJ´s**
+Conforme indicamos no início da oficina, a base de CNPJ foi disponibilizada em formato SQLite compactada para download. 
 
-Conforme indicamos no início da oficina a base de CNPJ foi disponibilizada em formato SQLite compactada para download. 
+Respeitando o licenciamento da base, levamos a conhecimento:
 
-Respeitando o licenciamento da base levamos a conhecimento:
-
-A licença do código é [LGPL3](https://www.gnu.org/licenses/lgpl-3.0.en.html) e dos dados convertidos [Creative Commons Attribution ShareAlike](https://creativecommons.org/licenses/by-sa/4.0/). Fonte original e quem tratou os dados:Receita Federal do Brasil, dados tratados por Álvaro Justen/[Brasil.IO](https://brasil.io/).
+A licença do código é [LGPL3](https://www.gnu.org/licenses/lgpl-3.0.en.html) e dos dados convertidos [Creative Commons Attribution ShareAlike](https://creativecommons.org/licenses/by-sa/4.0/). Fonte original: Receita Federal do Brasil Responsável por tratar os dados: Álvaro Justen/[Brasil.IO](https://brasil.io/).
 
 Das tabelas dispobilizada mantivemos somente a que continha todos os CNPJ´s, de qualquer forma caso tenha curiosidade de ver como foi feita a montagem deste banco em sqlite  teremos um chunk mais abaixo **que está inativo** - ` eval=FALSE` que realiza o processo de ingestão dos dados caso tenha mais um tempinho.
 
-**Falar sobre o desafio de rodar a base e colocar nos comentarios o tempo**
+**Falar sobre o desafio de rodar a base e colocar nos comentários o tempo**
 
-Terminamos assim o donwload dos aquivos, baixamos diferentes bases de dados em tamanho e características, agora estes arquivos serão trabalhados para que seja possível obter algum resultado.
+Terminamos assim o donwload dos aquivos, baixamos diferentes bases de dados em tamanho e características. Agora, estes arquivos serão trabalhados para que seja possível obter algum resultado.
 
-## Leitura dos dados
+## Fase 2 - Lendo os dados
 
-Com os dados baixados, começa a jornada para de lê-los e ajustá-los ou vice-versa . 
+Com os dados baixados, começa a jornada para de lê-los e ajustá-los e vice-versa. 
 
-### Lendo 1 arquivo
+### Lendo **PGFN** -> 1 arquivo
 
-**PGFN**
 O arquivo com os dados da PGFN com as dívidas do FGTS será lido e passado para um data.frame, usaremos o pacote *vroom* 
 
 ```{r Leitura dados PGFN, eval= FALSE }
@@ -188,46 +185,48 @@ head(dados_fgts_com_vroom)
 nrow(dados_fgts_com_vroom)
 ```
 
-Conforme apresentado o arquivo compactado que estamos tratando possui um *.csv* para cada estado e a quantidade de **1170** observações não parece condizer com a quantidade de empresas inscritas em divida com no FGTS, bem como, os caracteres quebrados podem dificultar as manipulações dos dados. A base foi disponiblizada com caracteres que precisaremos informar para o pacote para que sejam apresentados. 
-Outro detalhe é que precisaremos criar uma função que lerá todos os arquivos dentro do *.zip* e passe cada 1 para o *vroom* e assim passá-los para um data.frame.
+Conforme apresentado, o arquivo compactado que estamos tratando possui um *.csv* para cada estado e a quantidade de **1170** observações não parece condizer com a quantidade de empresas inscritas em divida no FGTS. Além disso, os caracteres quebrados podem dificultar as manipulações dos dados. A base foi disponiblizada com caracteres latinos, e precisaremos informar para o pacote para conseguir a visualização adequada. 
+Outro detalhe: precisaremos criar uma função que irá ler todos os arquivos dentro do *.zip*, passar cada 1 para o *vroom* e, por fim, incluir em um data.frame.
 
 ```{r Leitura dados FGTS, eval= FALSE}
-##Instrução para ler os caractereres corratamete
+##Instrução para ler os caractereres corretamete:
 locale_padrao_pt <- locale("pt", encoding = "latin1")
 
 
-#Criando um wrapper para ler todos os dados dentro do arquivo para o VROOM ler de forma correta
+#Criando um wrapper para ler todos os dados dentro do arquivo para que o VROOM "entenda" de forma correta
 ler_arquivos_dentro_zip <- function(file, ...) {
   nome_dos_arquivos <- unzip(file, list = TRUE)$Name
   vroom(purrr::map(nome_dos_arquivos, ~ unz(file, .x)), locale = locale_padrao_pt,   ...)
 }
 
-#passando para o wrapper o caminho do arquivo para leitura de todos os dados
+#Passando para o wrapper o caminho do arquivo para leitura de todos os dados
 tic()
 leitura_direta_vroom <- ler_arquivos_dentro_zip("./divida/Dados_abertos_FGTS.zip")
 toc()
 
 ```
 
-**LEMBRA DE EXCLUIR O CAMPO NOME_DEVEDOR E TROCAR PARA DATA.TABLE**
+**LEMBRAR DE EXCLUIR O CAMPO NOME_DEVEDOR E TROCAR PARA DATA.TABLE**
 
-Agora que cada arquivo foi passado ao *vroom* e depositado em um data.frame contabilizou-se mais de 440 mil observações, bem diferente do primeiro valor contabilizado
+Agora que cada arquivo foi passado ao *vroom* e incluído em um data.frame, contabilizamos mais de 440 mil observações, bem diferente do primeiro valor contabilizado, não é?
+
 ```{r Verificando o dados da base FGTS}
 leitura_direta_vroom <- leitura_direta_vroom[,-4] #RETIRANDO O NOME DA EMPRESA
 head(leitura_direta_vroom)
 nrow(leitura_direta_vroom)
 ```
 
-Por fim nestes dados o campo **CPF_CNPJ** está com a máscara, e para a realização das consultas iremos retirá-la
+Nestes dados, o campo **CPF_CNPJ** está com a máscara, e para a realização das consultas iremos retirá-la.
+
 ```{r Retirar máscara do CNPJ}
 #funcao do pacote tm que remove pontuacao
 removePunctuation(leitura_direta_vroom$CPF_CNPJ) -> leitura_direta_vroom$CPF_CNPJ
 ```
 
 
-### Lendo multiplos arquivos
+### Lendo **base do Novo Caged** --> múltiplos arquivos
 
-Ao se trabalhar com os  microdados do CAGED temos alguns percalços. Ao verificar o [dicionario de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx) os nomes das colunas foram escritos com acentuação e os arquivos são compactados em formato *.7z*. Para a primeira situação realizaremos o tratamento das colunas, quanto ao formato recomendamos ,quanto a compactação dos arquivos, para o andamento desta oficina, que vá na pasta `caged` do projeto e extraia os arquivos :( .
+Ao se trabalhar com os microdados do CAGED temos alguns percalços. Ao verificar o [dicionario de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx) os nomes das colunas foram escritos com acentuação e os arquivos estão compactados em formato *.7z*. Para lidar com a primeira situação, realizaremos o tratamento das colunas. Quanto ao formato, para o andamento desta oficina, recomendamos que vá na pasta `caged` do projeto (?) e extraia os arquivos :(
 
 ```{r Leitura dados CAGED, eval = FALSE}
 tic()
@@ -237,13 +236,14 @@ caged_lista_arquivos <- fs::dir_ls("./caged/", glob = "*txt")
 caged_movimentacao <- vroom(caged_lista_arquivos, col_types = list(.default = "c", saldomovimentação = "i" ))
 toc()
 ```
+
 Verificando o nome das colunas :
 
 ```{r Verificando o nome das colunas caged}
 names(caged_movimentacao)
 ```
 
-Realizamos a leitura de mais de 16 milhões de linhas com 24 colunas e a carga de mais dados pode começar a ficar difícil. Dando continuidade trataremos os nomes das colunas retirando os espaços, acentuação para trabalhar com estes dados.
+Realizamos a leitura de mais de 16 milhões de linhas com 24 colunas (Nuh!) e a carga de mais dados pode começar a ficar difícil. Dando continuidade, trataremos os nomes das colunas retirando os espaços e acentuação. Assim, vamos conseguir trabalhar com estes dados.
 
 
 ```{r Tratando nomes das colunas CAGED, eval= FALSE}
@@ -254,8 +254,7 @@ caged_movimentacao %>%
  
 ```
 
-Com os nomes padronizados estamos com mais uma base pronta .
-
+Com os nomes padronizados, estamos com mais uma base pronta :)
 
 ```{r Nomes das colunas do CAGED }
 #Verificando o numero de linhas
@@ -264,11 +263,13 @@ nrow(caged_movimentacao)
 names(caged_movimentacao)
 ```
 
-#### Atenção - Base de CNPJ - Para fazer fora da oficina
+#### Lendo a **base CNPJ da RF** (#sqn) 
+## Atenção! Desafio extra!
 
-Aqui temos um trabalho para você realizar **depois da oficina** que é fazer a carga dos dados de todas as empresas no banco sqlite em sua máquina, lembre-se recomendamos **NÃO REALIZÁ-LO** durante a oficina pois pode durar mais de 50 minutos. Porem, para fins de aprendizado, disponbilizados o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
+Aqui temos um trabalho para você realizar **depois da oficina** que é fazer a carga dos dados de todas as empresas no banco SQLite em sua máquina. Recomendamos **NÃO REALIZÁ-LO** durante a oficina, pois pode durar mais de 50 minutos. 
+Para fins de aprendizado, disponbilizamos o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
 
-**O chunk abaixo está desativado**
+**As linhas de código abaixo estão desativadas**
 ```{r Criando o banco cnpj, eval= FALSE}
 #Este chunk está desativado. 
 #Ative-o somente caso tenha tempo para aguardar o download da base e sua ingestão.
@@ -303,9 +304,9 @@ dbDisconnect(con)
 ```
 
 
-# Com todas estas bases a memória pode encher, e agora?
+# ... Nosssa! Com todas estas bases a memória pode encher. E agora, José?
 
-Os dados vão aparecendo, a necessidade de agregar mais variáveis ou pegar algum atributo de outra base e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompatá-lo são mais de 8Gb que você deveria carregar na memória.
+Os dados vão aparecendo, a necessidade de agregar mais variáveis ou pegar algum atributo de outra base e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompactá-lo são mais de 8Gb que você deveria carregar na memória.
 
 # SQLITE
 PATRICIA  
@@ -508,23 +509,12 @@ Temos a seguinte situação: Faremos um resumo por CNAEs selecionados em todas a
 
 Os resultados das consutas serão retornadas em variáveis do ambiente do R.
 
-Vamos consulta da tabela *movimentacao_caged*
-```{r Sumario por cnae movimentacao_caged }
-tic()
-resultado_movimentacao_caged <-
-  dbGetQuery(
-    con,
-    "select subclasse,sum(saldomovimentacao) as saldo_movimentacao from movimentacao_caged
-where subclasse in (6209100,8230001,4754701)
-group by subclasse"
-  )
-toc()
-resultado_movimentacao_caged
-```
+Vamos consultar a tabela *movimentacao_caged*
+#JOAO, COLOCAR O CHUNK MOVIMENTAÇÃO_GAGED DE VOLTA
  
 Agora faremos a cosulta na tabela *empresa* com os mesmos CNAES
 
-```{r Sumario por CNAE empresa}
+```{ r Sumario por cnae_empresa, error=TRUE}
 resultado_quantidade_empresa <-
   dbGetQuery(
     con,
@@ -547,7 +537,7 @@ dbSendQuery(
 
 Agora que temos uma relação de *cnpj vs cnae* podemos usá-la como subconsulta na tabela *divida_fgts*
 
-```{r Sumario por CNAE divida_fgts}
+```{r Sumario por CNAE divida_fgts, error=TRUE}
 resultado_saldo_divida <-
   dbGetQuery(
     con,
