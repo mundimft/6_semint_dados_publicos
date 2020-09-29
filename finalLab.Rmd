@@ -1,0 +1,136 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+#Existe outra alternativa ?
+
+OK, fizemos algumas querys, mas... "João não estou familiarizado com sql", sei usar R.
+
+Existe outra alternativa a biblioteca `dbplyr` te ajudará a conversar com o banco de uma forma "mais R"
+
+Vamos criar um vinculo com a tabela *divida_fgts*
+
+Você usará o mesmo parâmetro de conexão `con` para dizer em "qual lingua" você vai conversar com este banco
+
+```{r DBPlyr Criando vinculo com o banco}
+#Passamos para uma variável uma funcao do dplyr tbl para conversar com a tabela divida_fgts no banco
+divida_fgts_rsqlite <- tbl(con,"divida_fgts")
+```
+
+Este vinculo funciona como uma conexão com o banco, portanto poderemos executar consultas nesta tabela que foi referenciada.
+
+Vamos verificar os campos da tabela
+
+```{r DBPlyr head no FGTS}
+divida_fgts_rsqlite %>%
+  head()
+```
+
+Vamos simular a mesma consulta que fizemos anteriormente usando sql, fitraremos os registros do DF, a consulta havia retornado 6610 registros, vamos ver se funciona.
+
+```{r DBplyr consulta fgts no DF}
+divida_fgts_rsqlite %>%
+  filter(UF_UNIDADE_RESPONSAVEL == 'DF' ) %>%
+ count()
+```
+
+A quantidade bateu, é possível passar este resultado para uma variável para algum trablhar conforme fariamos no R
+
+```{r DBPlyr retorno dos resultados}
+retorno_divida_fgts <- divida_fgts_rsqlite %>%
+  filter(UF_UNIDADE_RESPONSAVEL == 'DF' )
+
+as.data.frame(retorno_divida_fgts)
+```
+
+Agora na tabela empresa que tem a maior quantidade de registros, vamos trazer alguns registros também.
+
+Primeiro vamos referenciar a tabela com a conexão com o banco
+
+```{r DBPlyr criando vinculo com o banco empresa}
+empresa_rsqlite <- tbl(con,"empresa")
+```
+
+Não podemos deixar de matar nossa curiosidade se vai funcionar
+
+```{r DBplyr consulta empresas }
+empresa_rsqlite %>%
+  count()
+```
+
+Há!!!! Parece que os numeros são os mesmos, novamente vamos testar nossos computadores, passaremos uma consulta de sumário na tabela empresa
+
+```{r DBPlyr sumario na tabela empresa}
+tic()
+sumario_empresa_cnae<- empresa_rsqlite %>%
+  filter(cnae_fiscal %in% selecao_cnae) %>%
+  group_by(cnae_fiscal) %>%
+  summarise(n = n())
+
+sumario_empresa_cnae
+toc()
+```
+
+Sabemos que vocÊs tiveram uma overdose de **sql**, mas para não perder o costume vamos olhar o que está acontecendo na cozinha...
+
+```{r DBPlyr vendo a query}
+sumario_empresa_cnae %>% show_query()
+```
+
+Parece que temos a boa e velha consulta em sql acontecendo por trás dos panos. 
+
+vamos dar mais uma olhadinha na tabela *movimentacao_caged* que tem mais de 16 milhões de registros.
+
+
+```{r DBPlyr Criando vinculo com o caged}
+#Passamos para uma variável uma funcao do dplyr tbl para conversar com a tabela movimentacao caged no banco
+movimentacao_caged_rsqlite <- tbl(con,"movimentacao_caged")
+```
+
+
+Não podemos deixar de contar a quantidade de registros
+
+```{r DBPlyr consulta movimentação_caged}
+movimentacao_caged_rsqlite %>%
+  count()
+```
+
+Coincidentemente os números bateram, agora vamos dar uma olhada nas primeiras linhas
+
+```{r DBPlyr Retorno dos resultados}
+
+movimentacao_caged_rsqlite %>%
+  head()
+
+```
+
+Por fim, vamos realizar o mesmo sumário da consulta em da movimentação_caged dos CNAES:
+
+* 6209100 - Suporte Técnico, Manutenção e Outros Serviços em Tecnologia da Informação
+* 8230001 - Serviços de Organização de Feiras, Congressos, Exposições e Festas
+* 4754701 - Comércio Varejista de Móveis
+
+```{r}
+simulado_lista_cnae <- c('6209100','8230001','4754701')
+
+movimentacao_caged_rsqlite %>%
+  filter(subclasse %in% simulado_lista_cnae) %>%
+  group_by(subclasse) %>%
+  summarise(soma = sum(saldomovimentacao))
+  
+```
+
+Pronto, agora você pode escolher a melhor forma de fazer as suas consultas, usando sql diretamente ou o dbplyr.
+
+
+
+## Simulando com dbplyr
+
+
+
+
+
+
+
+

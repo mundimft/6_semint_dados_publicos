@@ -75,3 +75,11 @@ group by cnae_fiscal
 select  cnae_fiscal,count(*) from divida_fgts
 left join lista_cnpj on divida_fgts.CPF_CNPJ = lista_cnpj.cnpj
 where CPF_CNPJ in (select cnpj from lista_cnpj)
+
+
+
+### lendo os arquivos
+
+arquivos_diretorio_caged <- fs::dir_ls("./caged/", glob = "*.txt")
+
+unark(arquivos_diretorio_caged, con, streamable_table = )
