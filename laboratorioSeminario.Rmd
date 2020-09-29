@@ -67,10 +67,6 @@ if(!require('data.table')){
 
 * 3) Se em alguns pacotes apresentarem erro de depêndencia, tente usar o  `install.packages("nome do pacote", dependencies = TRUE)`
 
-* 4) As consultas que vamos realizar podem demorar algum tempo, manteremos vocês informados.(?)
-
-
-
 ## Para quem só sabe usar martelo, **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
 <div style="text-align: justify">
 ... nosso martelo é leve (SQL) e já temos um pouquinho de experiência com a linguagem **R** que aprendemos na escola...
@@ -188,21 +184,21 @@ head(dados_fgts_com_vroom)
 nrow(dados_fgts_com_vroom)
 ```
 
-Conforme apresentado, o arquivo compactado que estamos tratando possui um *.csv* para cada estado e a quantidade de **1170** observações não parece condizer com a quantidade de empresas inscritas em divida no FGTS. Além disso, os caracteres quebrados podem dificultar as manipulações dos dados. A base foi disponiblizada com caracteres latinos, e precisaremos informar para o pacote para conseguir a visualização adequada. 
+Conforme apresentado, o arquivo compactado que estamos tratando possui um *.csv* para cada estado e a quantidade de **1170** observações não parece condizer com a quantidade de empresas inscritas em divida no FGTS. Além disso, os caracteres quebrados podem dificultar as manipulações dos dados. A base foi disponiblizada com caracteres latinos (ç,õ,é, ...), e precisaremos informar isso para o pacote para conseguir a visualização adequada. 
 Outro detalhe: precisaremos criar uma função que irá ler todos os arquivos dentro do *.zip*, passar cada 1 para o *vroom* e, por fim, incluir em um data.frame.
 
 ```{r Leitura dados FGTS, eval= FALSE}
-##Instrução para ler os caractereres corretamete:
+##Instrução para ler os caractereres corretamente:
 locale_padrao_pt <- locale("pt", encoding = "latin1")
 
 
-#Criando um wrapper para ler todos os dados dentro do arquivo para que o VROOM "entenda" de forma correta
+#Criando uma função para ler todos os dados dentro do arquivo para que o VROOM "entenda" de forma correta
 ler_arquivos_dentro_zip <- function(file, ...) {
   nome_dos_arquivos <- unzip(file, list = TRUE)$Name
   vroom(purrr::map(nome_dos_arquivos, ~ unz(file, .x)), locale = locale_padrao_pt,   ...)
 }
 
-#Passando para o wrapper o caminho do arquivo para leitura de todos os dados
+#Indicando para a função o caminho do arquivo para leitura de todos os dados
 tic()
 leitura_direta_vroom <- ler_arquivos_dentro_zip("./divida/Dados_abertos_FGTS.zip")
 toc()
@@ -220,7 +216,7 @@ nrow(leitura_direta_vroom)
 
 Nestes dados, o campo **CPF_CNPJ** está com a máscara, e para a realização das consultas iremos retirá-la.
 
-**Spoiler** a base que irá fornecer algumas informações o campo CNPJ não possui a máscara
+**Spoiler** na base que irá fornecer algumas informações para nós o campo CNPJ não possui a máscara, por isso temos que retirá-la.
 
 ```{r Retirar máscara do CNPJ}
 #funcao do pacote tm que remove pontuacao
@@ -230,7 +226,7 @@ removePunctuation(leitura_direta_vroom$CPF_CNPJ) -> leitura_direta_vroom$CPF_CNP
 
 ### Lendo **base do Novo Caged** --> múltiplos arquivos
 
-Ao se trabalhar com os microdados do CAGED temos alguns percalços. Ao verificar o [dicionario de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx) os nomes das colunas foram escritos com acentuação e os arquivos estão compactados em formato *.7z*. Para lidar com a primeira situação, realizaremos o tratamento das colunas. Quanto ao formato, para o andamento desta oficina, recomendamos que vá na pasta `caged` do projeto (?) e extraia os arquivos :(
+Ao se trabalhar com os microdados do CAGED temos alguns percalços. Ao verificar o [dicionario de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx) os nomes das colunas foram escritos com acentuação e os arquivos estão compactados em formato *.7z*. Para lidar com a primeira situação, realizaremos o tratamento das colunas. Quanto ao formato, para o andamento desta oficina, é necessário extrair os arquivos na pasta `caged` do nosso projeto (vide aba Files) :(
 
 ```{r Leitura dados CAGED, eval = FALSE}
 tic()
@@ -271,11 +267,11 @@ names(caged_movimentacao)
 ## Atenção! Desafio extra!
 
 Aqui temos um trabalho para você realizar **depois da oficina** que é fazer a carga dos dados de todas as empresas no banco SQLite em sua máquina. Recomendamos **NÃO REALIZÁ-LO** durante a oficina, pois pode durar mais de 50 minutos. 
-Para fins de aprendizado, disponbilizamos o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para um banco de dados em sqlite.
+Para fins de aprendizado, disponbilizamos o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para um banco de dados em SQLite.
 
 **As linhas de código abaixo estão desativadas**
 ```{r Criando o banco cnpj, eval= FALSE}
-#Este chunk está desativado. 
+#Estas linhas de código estão destivadas
 #Ative-o somente caso tenha tempo para aguardar o download da base e sua ingestão.
 #todos os cnpjs 
 dir.create("./cnpj")
@@ -285,11 +281,11 @@ download.file("https://data.brasil.io/dataset/socios-brasil/empresa.csv.gz", "./
 
 
 
-#criando conexão com o banco
+#criando conexao com o banco
 con <- dbConnect(RSQLite::SQLite(), "meu_primeiro_banco.db")
 
 #esta funcao e necessaria para alterar o tratamento de entrada dos dados das colunas.
-#e criada uma tabela de streamming que lê o arquivo e repassar para o arquivo sqlite
+#e criada uma tabela de streamming que le o arquivo e repassar para o arquivo sqlite
 tabela_temp_streaming_cnpj <- function() {
   streamable_table(
     function(file, ...) readr::read_csv(file,col_types = list(.default = "c"),  ...),
@@ -303,12 +299,12 @@ tic()
 unark("./cnpj/empresa.csv.gz", con, lines=100000, streamable_table = tabela_temp_streaming_cnpj() )
 toc()
 
-#lembrar sempre de disconectar do banco
+#lembrar sempre de se desconectar do banco
 dbDisconnect(con)
 ```
 
 
-# ... Nosssa! Com todas estas bases a memória pode encher. E agora, José ou João?
+# ... Nosssa! Com todas estas bases a memória pode encher. E agora, José (ou João)?
 
 Os dados vão aparecendo, a necessidade de agregar mais variáveis ou pegar algum atributo de outra base e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompactá-lo são mais de 8Gb que você deveria carregar na memória.
 
@@ -519,7 +515,8 @@ Temos a seguinte situação: Faremos um resumo por CNAEs selecionados em todas a
 Os resultados das consutas serão retornadas em variáveis do ambiente do R.
 
 Vamos consultar a tabela *movimentacao_caged*
-````{r Sumario por cnae movimentacao_caged}
+
+```{r Sumario por cnae}
 tic()
 resultado_movimentacao_caged <-
   dbGetQuery(
