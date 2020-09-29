@@ -12,7 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 * Conhecimento básico da Linguagem R
 * Conhecimento básico da Linguagem SQL
-* Download do DB Explorer SQL Lite;
+* Download do [DB Explorer SQL Lite](https://sqlitebrowser.org/dl/);
+* Descompactador de arquivos
 * Download do [R Base](https://cran.r-project.org/bin/windows/base/) atualizado (4.0.2) - *tem se mostrado mais rápido*;
 
 ## Principais Bibliotecas
@@ -72,7 +73,7 @@ if(!require('data.table')){
 
 ## Para quem só sabe usar martelo, **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
 <div style="text-align: justify">
-... nosso martelo é leve (SQL) e já temos um pouquinho de experiência com a linguagem (R) que aprendemos na escola...
+... nosso martelo é leve (SQL) e já temos um pouquinho de experiência com a linguagem **R** que aprendemos na escola...
 --> Por isso vamos usar SQL + R
 
 "Concordando conosco..." rsrs , em seu livro [Efficient R Programming](https://csgillespie.github.io/efficientR/) Colin Gillespie e Robin Lovelace falam sobre o uso de bancos de dados com o R no [capitulo 6](https://csgillespie.github.io/efficientR/data-carpentry.html) - *6.6 Working with databases*:
@@ -116,7 +117,7 @@ Será criada uma pasta para armazenar estes downloads para facilitar a posteior 
 #diretorio para amazenamento
 dir.create("./divida")
 
-#Divida FGTS - conforme documentação testar o método WB (Windows)
+#Divida FGTS 
 download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_FGTS.zip", "./divida/Dados_abertos_FGTS.zip", method = "auto")
 
 ```
@@ -145,7 +146,7 @@ filenames
 #laço baixando todos os arquivos dentro da pasta 
 for (filename in filenames) {
   download.file(paste(url, filename, sep = ""), paste(getwd(), "/caged/", filename,
-                                                      sep = ""), method = "curl")
+                                                      sep = ""), method = "wininet", mode ="wb")
 }
 # MAC ou linux os dados devem ser baixados diretamente
 #cuidado com o metodo ao baixar do FTP o metodo pode corromper o arquivo  
@@ -165,7 +166,9 @@ Das tabelas dispobilizada mantivemos somente a que continha todos os CNPJ´s, de
 
 **Falar sobre o desafio de rodar a base e colocar nos comentários o tempo**
 
-Terminamos assim o donwload dos aquivos, baixamos diferentes bases de dados em tamanho e características. Agora, estes arquivos serão trabalhados para que seja possível obter algum resultado.
+Aqui acreditamos que já deu um tempo para baixar o download que passamos no início da oficina, **descompacte o arquivo meu_primeiro_db.zip na pasta do projeto** para podermos usá-lo
+
+Terminamos assim o download dos aquivos, baixamos diferentes bases de dados em tamanho e características. Agora, estes arquivos serão trabalhados para que seja possível obter algum resultado.
 
 ## Fase 2 - Lendo os dados
 
@@ -203,10 +206,9 @@ ler_arquivos_dentro_zip <- function(file, ...) {
 tic()
 leitura_direta_vroom <- ler_arquivos_dentro_zip("./divida/Dados_abertos_FGTS.zip")
 toc()
-
 ```
 
-**LEMBRAR DE EXCLUIR O CAMPO NOME_DEVEDOR E TROCAR PARA DATA.TABLE**
+**TROCAR PARA DATA.TABLE**
 
 Agora que cada arquivo foi passado ao *vroom* e incluído em um data.frame, contabilizamos mais de 440 mil observações, bem diferente do primeiro valor contabilizado, não é?
 
@@ -217,6 +219,8 @@ nrow(leitura_direta_vroom)
 ```
 
 Nestes dados, o campo **CPF_CNPJ** está com a máscara, e para a realização das consultas iremos retirá-la.
+
+**Spoiler** a base que irá fornecer algumas informações o campo CNPJ não possui a máscara
 
 ```{r Retirar máscara do CNPJ}
 #funcao do pacote tm que remove pontuacao
@@ -267,7 +271,7 @@ names(caged_movimentacao)
 ## Atenção! Desafio extra!
 
 Aqui temos um trabalho para você realizar **depois da oficina** que é fazer a carga dos dados de todas as empresas no banco SQLite em sua máquina. Recomendamos **NÃO REALIZÁ-LO** durante a oficina, pois pode durar mais de 50 minutos. 
-Para fins de aprendizado, disponbilizamos o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
+Para fins de aprendizado, disponbilizamos o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para um banco de dados em sqlite.
 
 **As linhas de código abaixo estão desativadas**
 ```{r Criando o banco cnpj, eval= FALSE}
@@ -304,7 +308,7 @@ dbDisconnect(con)
 ```
 
 
-# ... Nosssa! Com todas estas bases a memória pode encher. E agora, José?
+# ... Nosssa! Com todas estas bases a memória pode encher. E agora, José ou João?
 
 Os dados vão aparecendo, a necessidade de agregar mais variáveis ou pegar algum atributo de outra base e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompactá-lo são mais de 8Gb que você deveria carregar na memória.
 
@@ -382,6 +386,8 @@ dbWriteTable(con, #conexão com o banco
              "divida_fgts",#nome da tabela no banco
              leitura_direta_vroom) #nnome do data.frame
 toc()
+rm(leitura_direta_vroom)
+gc()
 ```
 
 Agora com duas tabelas, o cenário começa a ficar um pouco mais robusto, porem, sem carregar na memória, podemos inclusive excluir o data frame com os dados do fgts.
@@ -404,7 +410,7 @@ dbGetQuery(con, "select * from divida_fgts limit 10")
 toc()
 ```
  
-Falta uma tabela a `caged_movimentacao` inclusive ela tem uma boa quantidade de registros. Para fixar o conhecimento vamos realizar mais uma carga de dados.
+Falta uma tabela a `caged_movimentacao` inclusive ela tem uma boa quantidade de registros. Para fixar o conhecimento vamos realizar mais uma carga de dados. Aqui dependendo do seu computador a consulta pode demorar mais de 15 minutos!! 
 
 ```{r Carga tabela movimentacao_caged}
 tic()
@@ -412,7 +418,10 @@ dbWriteTable(con,
              "movimentacao_caged",
              caged_movimentacao)
 toc()
+rm(caged_movimentacao)
+gc()
 ```
+O tempo de carga parece uma eternidade...
 
 Agora temos um banco com 3 tabelas completas de nossa oficina. Caso precise, por exemplo, disponibilizar os dados para estudo os mesmo já estão agrupados em um único arquivo. Você pode compactá-lo e disponibilizar e passar adiante.
 
@@ -510,11 +519,23 @@ Temos a seguinte situação: Faremos um resumo por CNAEs selecionados em todas a
 Os resultados das consutas serão retornadas em variáveis do ambiente do R.
 
 Vamos consultar a tabela *movimentacao_caged*
-#JOAO, COLOCAR O CHUNK MOVIMENTAÇÃO_GAGED DE VOLTA
- 
+````{r Sumario por cnae movimentacao_caged}
+tic()
+resultado_movimentacao_caged <-
+  dbGetQuery(
+    con,
+    "select subclasse,sum(saldomovimentacao) as saldo_movimentacao from movimentacao_caged
+where subclasse in (6209100,8230001,4754701)
+group by subclasse"
+  )
+toc()
+resultado_movimentacao_caged
+``` 
+
 Agora faremos a cosulta na tabela *empresa* com os mesmos CNAES
 
-```{ r Sumario por cnae_empresa, error=TRUE}
+```{r Sumario por cnae_empresa}
+tic()
 resultado_quantidade_empresa <-
   dbGetQuery(
     con,
@@ -529,15 +550,18 @@ resultado_quantidade_empresa
 Para realizar a consulta por CNAE na tabela divida_fgts, criaremos uma tabela com a relação *cnpj vs cnae* que será usada como subconsulta.
 
 ```{r Lista de subconsulta}
+tic()
 dbSendQuery(
   con,
   "create table lista_cnae as SELECT cnpj, cnae_fiscal from empresa where cnae_fiscal in (6209100,8230001,4754701)"
 )
+toc()
 ```
 
 Agora que temos uma relação de *cnpj vs cnae* podemos usá-la como subconsulta na tabela *divida_fgts*
 
 ```{r Sumario por CNAE divida_fgts, error=TRUE}
+tic()
 resultado_saldo_divida <-
   dbGetQuery(
     con,
@@ -553,8 +577,10 @@ resultado_saldo_divida
 Com todos os resultados depositados em variável e para quem estava com saudade de código em R segue.
 
 ```{r Montando o resultado final}
+tic()
 left_join(resultado_quantidade_empresa, resultado_movimentacao_caged, by = c("cnae_fiscal"="subclasse")) %>%
   left_join(.,resultado_saldo_divida, by = c("cnae_fiscal"))
+toc()
 ```
 
 #Finalização
