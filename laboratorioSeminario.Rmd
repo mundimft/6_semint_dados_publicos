@@ -10,8 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Requisitos
 
-* Linguagem R ;
-* Linguagem SQL ;
+* Conhecimento inguagem R ;
+* Conhecimento Linguagem SQL ;
 * DB Explorer SQL Lite;
 * [R Base](https://cran.r-project.org/bin/windows/base/) atualizado (4.0.2) - *tem se mostrado mais rápido*;
 
@@ -119,7 +119,7 @@ download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_FGTS.zip", "./divid
 
 ```
 
-Foram baixados `r ` Mb de dados compactados
+Foram baixados 13 Mb de dados compactados
 
 
 ### Baixando multiplos arquivos
@@ -151,13 +151,13 @@ for (filename in filenames) {
 #cuidado com o metodo ao baixar do FTP o metodo pode corromper o arquivo  
 ```
 
-Foram baixados `r ` Mb de dados compactados.
+Foram baixados 182 Mb de dados compactados.
 
 ### Atenção - Base CNPJ
 
 **CNPJ´s**
 
-Conforme indicamos no início da oficina a base de CNPJ foi disponibilizada já em formato SQLite para download. 
+Conforme indicamos no início da oficina a base de CNPJ foi disponibilizada em formato SQLite compactada para download. 
 
 Respeitando o licenciamento da base levamos a conhecimento:
 
@@ -166,7 +166,6 @@ A licença do código é [LGPL3](https://www.gnu.org/licenses/lgpl-3.0.en.html) 
 Das tabelas dispobilizada mantivemos somente a que continha todos os CNPJ´s, de qualquer forma caso tenha curiosidade de ver como foi feita a montagem deste banco em sqlite  teremos um chunk mais abaixo **que está inativo** - ` eval=FALSE` que realiza o processo de ingestão dos dados caso tenha mais um tempinho.
 
 **Falar sobre o desafio de rodar a base e colocar nos comentarios o tempo**
-
 
 Terminamos assim o donwload dos aquivos, baixamos diferentes bases de dados em tamanho e características, agora estes arquivos serão trabalhados para que seja possível obter algum resultado.
 
@@ -488,7 +487,7 @@ Foram computador 833 registros com estes filtros.
 
 Aumentando as possibillidades iremos realizar uma consulta que trará a quantidade de empresas ativas baseado no atributo UF da tabela *empresa*. Será realizada a contagem de quantas empresas estão ativas (situacao_cadastral = 2 ) nos estados do Acre - AC, Mato Grosso - MT e Ceará - CE .
 
-```{r}
+```{r Consulta a base com sumario empresa}
 tic()
 dbGetQuery(
   con,
@@ -497,8 +496,97 @@ dbGetQuery(
 toc()
 ```
 
+### Query com subquery
 
+Temos a seguinte situação: Faremos um resumo por CNAEs selecionados em todas as bases de dados, porem duas de 3 bases de dados possuem o CNAE em seus atributos *empresa e movimentacao_caged*. A tabela *empresa* possui a relação de todas as empresas e cnaes, usaremos o cnpj para levar o cnae desta tabela para a *divida_fgts* usando o CNPJ como referência e armazenaremos o resultado em uma tabela paralela para não ter que varrer toda a tabela *empresa*
+
+**CNAES: **
+
+* 6209100 - Suporte Técnico, Manutenção e Outros Serviços em Tecnologia da Informação
+* 8230001 - Serviços de Organização de Feiras, Congressos, Exposições e Festas
+* 4754701 - Comércio Varejista de Móveis
+
+Os resultados das consutas serão retornadas em variáveis do ambiente do R.
+
+Vamos consulta da tabela *movimentacao_caged*
+```{r Sumario por cnae movimentacao_caged }
+tic()
+resultado_movimentacao_caged <-
+  dbGetQuery(
+    con,
+    "select subclasse,sum(saldomovimentacao) as saldo_movimentacao from movimentacao_caged
+where subclasse in (6209100,8230001,4754701)
+group by subclasse"
+  )
+toc()
+resultado_movimentacao_caged
+```
  
+Agora faremos a cosulta na tabela *empresa* com os mesmos CNAES
+
+```{r Sumario por CNAE empresa}
+resultado_quantidade_empresa <-
+  dbGetQuery(
+    con,
+    "select cnae_fiscal,count(*)as total_empresas from empresa
+where cnae_fiscal in (6209100,8230001,4754701)
+group by cnae_fiscal"
+  )
+toc()
+resultado_quantidade_empresa
+```
+
+Para realizar a consulta por CNAE na tabela divida_fgts, criaremos uma tabela com a relação *cnpj vs cnae* que será usada como subconsulta.
+
+```{r Lista de subconsulta}
+dbSendQuery(
+  con,
+  "create table lista_cnae as SELECT cnpj, cnae_fiscal from empresa where cnae_fiscal in (6209100,8230001,4754701)"
+)
+```
+
+Agora que temos uma relação de *cnpj vs cnae* podemos usá-la como subconsulta na tabela *divida_fgts*
+
+```{r Sumario por CNAE divida_fgts}
+resultado_saldo_divida <-
+  dbGetQuery(
+    con,
+    "select cnae_fiscal, round(sum(VALOR_CONSOLIDADO),2) as total_divida from divida_fgts
+left join lista_cnae on divida_fgts.CPF_CNPJ = lista_cnae.cnpj
+where CPF_CNPJ in (SELECT cnpj from lista_cnae)
+GROUP by cnae_fiscal"
+  )
+toc()
+resultado_saldo_divida
+```
+
+Com todos os resultados depositados em variável e para quem estava com saudade de código em R segue.
+
+```{r Montando o resultado final}
+left_join(resultado_quantidade_empresa, resultado_movimentacao_caged, by = c("cnae_fiscal"="subclasse")) %>%
+  left_join(.,resultado_saldo_divida, by = c("cnae_fiscal"))
+```
+
+#Finalização
+
+Analisando nossa jornada:
+
+* baixamos uma boa quantidade de dados;
+* extraimos os dados;
+* corrigimos alguns detalhes;
+* montamos as bases de dados;
+* criamos um banco de dados;
+* populamos o banco com mais informações;
+* realizamos consultas na base sem encher a memória;
+* tratamos de diferentes abordagens para as buscas;
+* trouxemos os resultados em memória;
+* trabalhamos com os resultados da memória.
+
+
+Agradecemos por acompanhar esta jornada até o final, esperamos que tenham acumulado algum conhecimento.
+
+O nosso muito obrigado!
+
 
 
 
