@@ -100,7 +100,7 @@ Vamos baixar dos dados, verificar alguns detalhes que podem aparecer e corrigir 
 
 A primeira situação que nos deparamos é baixar as bases, são diferentes fontes **(http, ftp)**, disponibilizadas de diferentes formas **(csv, zip, gz)**, além da quantidade que pode variar, 1 arquivo por período, 1 arquivo com todos os dados.
 
-Será disponibilizado um link alternativo de download das bases, uma quantidade de conexões simultânea solicitando o arquivo nos servidores  pode ser interpretado como um comportamento anormal ou ataque. Desculpe!
+Disponibilizamos link alternativo de download das bases, uma quantidade de conexões simultânea solicitando o arquivo nos servidores  pode ser interpretado como um comportamento anormal. Desculpe!
 
 ### Baixando 1 arquivo 
 
@@ -114,17 +114,8 @@ Será criada uma pasta para armazenar estes downloads para facilitar a posteior 
 #diretorio para amazenamento
 dir.create("./divida")
 
-#PGFN Divida Ativa Geral - site está fora do ar e este arquivo é maior base - talvez trabalharemos somente com o FGTS
-#download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_Nao_Previdenciario.zip", "./divida/Dados_abertos_Nao_Previdenciario.zip", method = "wininet")
-
 #Divida FGTS - conforme documentação testar o método WB (Windows)
 download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_FGTS.zip", "./divida/Dados_abertos_FGTS.zip", method = "auto")
-
-#Divida Previdenciaria
-
-#download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_Previdenciario.zip", "./divida/Dados_abertos_Previdenciario.zip", method = "auto")
-
-#tamanho da base 1Gb
 
 ```
 
@@ -156,7 +147,7 @@ for (filename in filenames) {
   download.file(paste(url, filename, sep = ""), paste(getwd(), "/caged/", filename,
                                                       sep = ""), method = "curl")
 }
-
+# MAC ou linux os dados devem ser baixados diretamente
 #cuidado com o metodo ao baixar do FTP o metodo pode corromper o arquivo  
 ```
 
@@ -174,11 +165,10 @@ A licença do código é [LGPL3](https://www.gnu.org/licenses/lgpl-3.0.en.html) 
 
 Das tabelas dispobilizada mantivemos somente a que continha todos os CNPJ´s, de qualquer forma caso tenha curiosidade de ver como foi feita a montagem deste banco em sqlite  teremos um chunk mais abaixo **que está inativo** - ` eval=FALSE` que realiza o processo de ingestão dos dados caso tenha mais um tempinho.
 
+**Falar sobre o desafio de rodar a base e colocar nos comentarios o tempo**
 
-[Link para download do sqlite com os dados dos CNPJ´s - 3.5Gb - ZIP]() - publicar um drive com este arquivo
 
-
-Terminamos assim o dowload dos aquivos, baixamos diferentes bases de dados em tamanho e características, agora estes arquivos serão trabalhados para que seja possível obter algum resultado.
+Terminamos assim o donwload dos aquivos, baixamos diferentes bases de dados em tamanho e características, agora estes arquivos serão trabalhados para que seja possível obter algum resultado.
 
 ## Leitura dos dados
 
@@ -277,7 +267,7 @@ names(caged_movimentacao)
 
 #### Atenção - Base de CNPJ - Para fazer fora da oficina
 
-Aqui temos um trabalho para você realizar **depois da oficina** que é fazer a carga dos dados de todas as empresas no banco sqlite em sua máquiba, lembre-se recomendamos não realizá-lo durante a oficina pois pode durar mais de 50 minutos. Porem, para fins de aprendizado, disponbilizados o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
+Aqui temos um trabalho para você realizar **depois da oficina** que é fazer a carga dos dados de todas as empresas no banco sqlite em sua máquina, lembre-se recomendamos **NÃO REALIZÁ-LO** durante a oficina pois pode durar mais de 50 minutos. Porem, para fins de aprendizado, disponbilizados o código de como realizar a ingestão de um grande arquivo sem ter que descompactá-lo e passar diretamente para uma base de dados.
 
 **O chunk abaixo está desativado**
 ```{r Criando o banco cnpj, eval= FALSE}
@@ -359,7 +349,9 @@ dbListFields(con, "empresa")
 Vamos olhar os dados desta tabela 
 
 ```{r Verificando os dados da tabela empresa}
-primeira_query_empresa <- dbGetQuery(con, "select * from empresa limit 10") #LIMIT é importante !!!
+primeira_query_empresa <-
+  dbGetQuery(con, "select * from empresa limit 10") #LIMIT é importante !!!
+
 primeira_query_empresa
 ```
 
@@ -369,15 +361,18 @@ E quantos registros temos nesta tabela
 
 ```{r Contando registros da tabela empresa}
 tic()
-contagem_registros_empresa <- dbGetQuery(con, "select count(*) from empresa")
+contagem_registros_empresa <-
+  dbGetQuery(con, "select count(*) from empresa")
 toc()
+
+
 contagem_registros_empresa
 ```
 Para varrer toda a tabela e contar todos os registros foi necessário um tempo, Leve em consideração este tempo para o desenho e estratégia das consultas.
 
 Rapidamente, fizemos uma pequena exploratória no banco, temos mais de **44 milhões* de registos com 32 colunas cada. E temos mais duas tabelas em memória que usaremos para interagir com a tabela *empresa* 
 
-## Realizando carga de 1 data.frame
+## Realizando carga dos data frames
 
 Como conseguimos realizar a leitura dos arquivos da dívida do **FGTS** vamos realizar a ingestão dele no banco.
 
@@ -404,7 +399,9 @@ dbListFields(con, "divida_fgts")
 Consultando os primeiros registros
 
 ```{r Verificando os dados da tabela divida_fgts }
+tic()
 dbGetQuery(con, "select * from divida_fgts limit 10")
+toc()
 ```
  
 Falta uma tabela a `caged_movimentacao` inclusive ela tem uma boa quantidade de registros. Para fixar o conhecimento vamos realizar mais uma carga de dados.
@@ -427,9 +424,106 @@ dbListTables(con)
 
 ## Trabalhando as consultas
 
-As primeiras consultas em sql que foram feitas equivalem a um `head()`, porem, precisamos filtrar os dados, trabalhar com eles. 
+As consultas acima em sql que foram realizadas equivalem a um `head()`, `nrow()` e `names()`, porem, precisamos filtrar os dados, trabalhar mais com eles.  
+Como primeira consulta realizaremos um filtro com campos existentes nas tabelas.
 
-8230001, 9319101, 5620102, 7220004, 8230001,
+Antes de trabalhar o plano de ataque vamos realizar um aquecimento, realizando uma consula com um filtro das empresas que estão nesta base no DF.
+
+```{r Consulta base com filto na query divida_fgts}
+tic()
+dbGetQuery(con,
+           "select * from divida_fgts where UF_UNIDADE_RESPONSAVEL='DF'")
+toc()
+```
+
+No DF temos 6610 empresas com tratativas sobre o FGTS.
+
+
+Para a tabela de movimentação do caged verificaremos quantos linhas de movimentação foram realizadas este ano para o estado Rio de Janeiro. Caso não tenha visto no dicionário de dados na aba *uf* os estados estão codificados e o valor correspondente ao *Rio de Janeiro é 33*
+
+```{r Consulta base com filto na query movimentacao_caged}
+tic()
+dbGetQuery(con, "select * from movimentacao_caged where uf=33")
+toc()
+```
+
+Mais de 1 milhão de registros de movimentações sobre os empregados, nesta consulta exigimos um pouco mais do computador, porem, carregar estes dados em memória.
+
+Para a tabela empresa seremos um pouco mais restritivos nos filtros pois é a tabela mais volumosa
+
+```{r Consulta base com filto na query empresa}
+tic()
+dbGetQuery(con, "select * from empresa where codigo_municipio=5819")
+toc()
+```
+
+Em Campo dos Goytacazes foram retornadas 92572 empresas pela consulta.
+
+### R + RSQLite
+
+Até o momento o R foi usado somente para passar as consultas ao RSQLite. Como próximo passo realizaremos uma consulta passando uma variável do ambiente do R.
+
+Duas tabelas contam com o **CNAE - Classificação Nacional de Atividade Econômica** em seus dados a **movimento_caged** com o nome do campo de *subclasse* e a tabela **empresas** com o nome do campo *cnae_fiscal*. Faremos uma consulta na tabela em dos dados do CAGED com uma variável que receberá os seguintes CNAES:
+
+* 8230001 - Serviços de Organização de Feiras, Congressos, Exposições e Festas
+* 8230002 - Casas de Festas e Eventos
+
+```{r lista de cnaes selecionados em memoria}
+selecao_cnae <- c('8230001','8230002')
+```
+
+Na tabela `movimento_caged` consultaremos qual a movimentação de trabalhadores no estado da Bahia = 29 dos segmentos de CNAE selecionados.
+
+```{r Consulta base com filtro em variavel caged }
+tic()
+dbGetQuery(
+  con,
+  "select * from movimentacao_caged where uf= 29 and subclasse = ?",
+  params = list(selecao_cnae)
+)
+toc()
+```
+
+Foram computador 833 registros com estes filtros.
+
+Aumentando as possibillidades iremos realizar uma consulta que trará a quantidade de empresas ativas baseado no atributo UF da tabela *empresa*. Será realizada a contagem de quantas empresas estão ativas (situacao_cadastral = 2 ) nos estados do Acre - AC, Mato Grosso - MT e Ceará - CE .
+
+```{r}
+tic()
+dbGetQuery(
+  con,
+  "select uf, count(*) from empresa where uf in ('AC','MT','CE') and situacao_cadastral = 2 group by uf"
+)
+toc()
+```
+
+
+ 
+
+
+
+Criar as seguintes situações
+
+realizar filtro com query direta ´where xxx = xx´
+realizar filtro com variável do R
+preparar o terreno para uma query em uma grande tabela
+  query com subquery
+
+relizar query limitando a quantidade de campos que são retornados
+  
+Reapresentar o select count 
+Fazer consultas com o group by
+
+
+
+
+
+8230001, 5620102, 7220004, 8230001,
+
+resultado das querys para trabalhar no R
+
+
+
 
 
 Baixado os dados 
