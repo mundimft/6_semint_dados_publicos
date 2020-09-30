@@ -18,11 +18,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Preparando o ambiente
 
-Você já baixou a base?? 
+Você já baixou a base? 
 
-Crie um projeto chamado 6_semint_dados_publicos
+Crie um projeto chamado *6_semint_dados_publicos*
 
-Descompacte a base *meu_primeiro_banco.zip nesta pasta 
+Descompacte a base *meu_primeiro_banco.zip* nesta pasta 
 
 Baixe os arquivos do [git](colocar aqui)
 
@@ -37,7 +37,6 @@ Baixe os arquivos do [git](colocar aqui)
 * [PGFN](http://dadosabertos.pgfn.gov.br/)
 
 # Importante! Caso tenha atualizado o R para a versão 4, fique atento e siga esses passos:
-
 
 * 1) Atualize o R Studio  
 
@@ -77,7 +76,7 @@ library(dbplyr)
 ## Para quem só sabe usar martelo, **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
 <div style="text-align: justify">
 ... nosso martelo é leve (SQL) e já temos um pouquinho de experiência com a linguagem **R** que aprendemos na escola...
---> Por isso vamos usar SQL + R
+--> Por isso vamos usar *SQL + R*
 
 "Concordando conosco..." rsrs , em seu livro [Efficient R Programming](https://csgillespie.github.io/efficientR/) Colin Gillespie e Robin Lovelace falam sobre o uso de bancos de dados com o R no [capitulo 6](https://csgillespie.github.io/efficientR/data-carpentry.html) - *6.6 Working with databases*:
 
@@ -91,22 +90,23 @@ E aí, até conseguir provisionar alguma instância, pedir mais memória, ou con
 
 <div/>
 
-*Break*
+*Time to Break*
+
 # Agora sim chegou a hora .... Mãos na massa! 
 
 **Plano de ataque**
 
-Para atingir os objetivos da Oficina, vamos percorrer uma jornada que nos levará a realizar uma consulta, produzindo um sumário de 3 bases de dados diferentes que não caberiam na memória. Esse é o desafio que enfrentaremos conjuntamente.
+Para atingir os objetivos da Oficina, vamos percorrer uma jornada que nos levará a realizar uma consulta, que produzirá um sumário de 3 bases de dados diferentes (que não caberiam na memória de um computador de baixa capacidade). Esse é o desafio que enfrentaremos conjuntamente.
  
-Vamos baixar dos dados, verificar alguns detalhes que podem aparecer e, principalmente, corrigir problemas. Depois disso, vamos criar um banco de dados para receber as bases. Faremos a ingestão destes dados no banco diretamente do data.frame. De posse de um banco populado com os dados necessários, realizaremos as consultas. 
+Vamos baixar dos dados, verificar alguns detalhes que podem aparecer e, principalmente, corrigir problemas. Depois disso, vamos criar um banco de dados para receber as bases. Faremos a ingestão destes dados no banco diretamente do data.frame. De posse de um banco populado com os dados necessários, realizaremos uma série de consultas até chegar naquela consulta final que mencionamos. 
 
-Vamos buscar fazer isso de forma bem simples e didática.
+Vamos buscar fazer isso de forma bem simples e didática ;)
 
 ## Fase 1 - Baixando os dados
 
 <div style="text-align: justify">
 
-A primeira situação que nos deparamos é baixar as bases, são diferentes fontes **(http, ftp)**, disponibilizadas de diferentes formas **(csv, zip, gz)**, além da quantidade que pode variar, 1 arquivo por período, 1 arquivo com todos os dados.
+A primeira situação que nos deparamos é baixar as bases. São diferentes fontes **(http, ftp)**, disponibilizadas de diferentes formas **(csv, zip, gz)**... Além da quantidade que pode variar, 1 arquivo por período, 1 arquivo com todos os dados.
 
 Disponibilizamos link alternativo de download das bases no início da Oficina, já que uma quantidade de conexões simultâneas pode ser interpretado como um comportamento anormal... E estamos em treinamento, certo? Tentamos retirar as variáveis inesperadas de nossa equação pedagógica.
 
@@ -126,12 +126,12 @@ download.file("http://dadosabertos.pgfn.gov.br/Dados_abertos_FGTS.zip", "./divid
 
 ```
 
-Foram baixados 13 Mb de dados compactados
+Foram baixados 13 Mb de dados compactados.
 
 
 ### Baixando a **base do Novo Caged** --> multiplos arquivos
 
-Os microdados do [CAGED](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/2020/) são fornecidos ao público por um ftp aberto em que os dados são dispostos em pastas por mês e cada pasta contem arquivos em formato **.7z** :( de todo o ano calendário. Faremos a leitura de todo o diretório e o download dos arquivos em pasta específica do tema.
+Os microdados do [CAGED](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/2020/) são fornecidos ao público por um ftp aberto em que os dados são dispostos em pastas por mês e cada pasta contém arquivos em formato **.7z** :( de todo o ano calendário. Faremos a leitura de todo o diretório e o download dos arquivos em pasta específica do tema.
 
 ```{r Download dados CAGED}
 #Dados do CAGED
@@ -160,7 +160,7 @@ Foram baixados 182 Mb de dados compactados.
 
 ### Baixando a **base CNPJ da RF** (#sqn)
 
-Conforme indicamos no início da oficina, a base de CNPJ foi disponibilizada em formato SQLite compactada para download. 
+Conforme indicamos no início da Oficina, a base de CNPJ foi disponibilizada em formato SQLite compactada para download. 
 
 Respeitando o licenciamento da base, levamos a conhecimento:
 
@@ -168,19 +168,19 @@ A licença do código é [LGPL3](https://www.gnu.org/licenses/lgpl-3.0.en.html) 
 
 Das tabelas dispobilizada mantivemos somente a que continha todos os CNPJ´s, de qualquer forma caso tenha curiosidade de ver como foi feita a montagem deste banco em sqlite  teremos um chunk mais abaixo **que está inativo** - ` eval=FALSE` que realiza o processo de ingestão dos dados caso tenha mais um tempinho.
 
-**Falar sobre o desafio de rodar a base e colocar nos comentários o tempo**
+*Vocês topam um desafio? Quem estiver acompanhando, rodando junto conosco as linhas de código, registre no chat o tempo de processamento.*
 
-Aqui acreditamos que já deu um tempo para baixar o download que passamos no início da oficina, **descompacte o arquivo meu_primeiro_db.zip na pasta do projeto** para podermos usá-lo
+Nesse ponto da Oficina, acreditamos que já deu um tempo para baixar o download que passamos no início da oficina. **Descompacte o arquivo meu_primeiro_db.zip na pasta do projeto** para podermos usá-lo.
 
 Terminamos assim o download dos aquivos, baixamos diferentes bases de dados em tamanho e características. Agora, estes arquivos serão trabalhados para que seja possível obter algum resultado.
 
 ## Fase 2 - Lendo os dados
 
-Com os dados baixados, começa a jornada para de lê-los e ajustá-los e vice-versa. 
+Com os dados baixados, começa a jornada para de lê-los e ajustá-los e/ou vice-versa. 
 
 ### Lendo **PGFN** -> 1 arquivo
 
-O arquivo com os dados da PGFN com as dívidas do FGTS será lido e passado para um data.frame, usaremos o pacote *vroom* 
+O arquivo com os dados da PGFN com as dívidas do FGTS será lido e passado para um data.frame, usaremos o pacote *vroom*:
 
 ```{r Leitura dados PGFN}
 #primeira pegadinha, o VROOM pode ser muito rápido, porem se você tiver multiplos arquivos dentro do zip ele precisa de uma ajudinha
@@ -193,7 +193,8 @@ nrow(dados_fgts_com_vroom)
 ```
 
 Conforme apresentado, o arquivo compactado que estamos tratando possui um *.csv* para cada estado e a quantidade de **1170** observações não parece condizer com a quantidade de empresas inscritas em divida no FGTS. Além disso, os caracteres quebrados podem dificultar as manipulações dos dados. A base foi disponiblizada com caracteres latinos (ç,õ,é, ...), e precisaremos informar isso para o pacote para conseguir a visualização adequada. 
-Outro detalhe: precisaremos criar uma função que irá ler todos os arquivos dentro do *.zip*, passar cada 1 para o *vroom* e, por fim, incluir em um data.frame.
+
+Outro detalhe: precisaremos criar uma função que irá ler todos os arquivos dentro do *.zip*, passar cada 1 para o *vroom* e, por fim, incluir em um data.frame:
 
 ```{r Leitura dados FGTS}
 ##Instrução para ler os caractereres corretamente:
@@ -221,9 +222,9 @@ head(leitura_direta_vroom)
 nrow(leitura_direta_vroom)
 ```
 
-Nestes dados, o campo **CPF_CNPJ** está com a máscara, e para a realização das consultas iremos retirá-la.
+Nestes dados, o campo **CPF_CNPJ** está com a máscara, e, para a realização das consultas, iremos retirá-la.
 
-**Spoiler** na base que irá fornecer algumas informações para nós o campo CNPJ não possui a máscara, por isso temos que retirá-la.
+**Spoiler** na base que irá fornecer algumas informações para nós, o campo CNPJ não possui a máscara. Por isso temos que retirá-la.
 
 ```{r Retirar máscara do CNPJ}
 #funcao do pacote tm que remove pontuacao
@@ -235,7 +236,7 @@ head(leitura_direta_vroom)
 
 ### Lendo **base do Novo Caged** --> múltiplos arquivos
 
-Ao se trabalhar com os microdados do CAGED temos alguns percalços. Ao verificar o [dicionario de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx) os nomes das colunas foram escritos com acentuação e os arquivos estão compactados em formato *.7z*. Para lidar com a primeira situação, realizaremos o tratamento das colunas. Quanto ao formato, para o andamento desta oficina, é necessário extrair os arquivos na pasta `caged` do nosso projeto (vide aba Files) :(
+Ao se trabalhar com os microdados do CAGED temos alguns percalços. Ao verificar o [dicionario de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx) os nomes das colunas foram escritos com acentuação e os arquivos estão compactados em formato *.7z*. Para lidar com a primeira situação, realizaremos o tratamento das colunas. Quanto ao formato, para o andamento desta Oficina, é necessário extrair os arquivos na pasta `caged` do nosso projeto (vide aba Files) :(
 
 ```{r Leitura dados CAGED, eval = FALSE}
 tic()
@@ -253,7 +254,6 @@ names(caged_movimentacao)
 ```
 
 Realizamos a leitura de mais de 16 milhões de linhas com 24 colunas (Nuh!) e a carga de mais dados pode começar a ficar difícil. Dando continuidade, trataremos os nomes das colunas retirando os espaços e acentuação. Assim, vamos conseguir trabalhar com estes dados.
-
 
 ```{r Tratando nomes das colunas CAGED}
 #Tratando os nomes
@@ -315,35 +315,40 @@ dbDisconnect(con)
 
 # ... Nosssa! Com todas estas bases a memória pode encher. E agora, José (ou João)?
 
-Os dados vão aparecendo, a necessidade de agregar mais variáveis ou pegar algum atributo de outra base e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompactá-lo são mais de 8Gb que você deveria carregar na memória.
+Os dados vão aparecendo, há a necessidade de agregar mais variáveis ou pegar algum atributo de outra base... e chega uma hora que não temos mais memória disponível em nossa máquina para o R trabalhar ou carregar mais dados.
+Para se ter ideia, somente a base de cnpj´s, em um único arquivo compactado, tem 2.4Gb. Ao descompactá-lo, seriam mais de 8Gb que você carregaria na memória.
 
 # SQLITE
  
-  - SQL (a sintaxe) - igual papo doméstico `selecione e conte as coisas do lugar que estão abertas e agrupe por tipo`! :)
+  - SQL (a sintaxe) - igual "papo doméstico" `selecione e conte as coisas do lugar que estão abertas e agrupe por tipo`! :)
   - -> select count(coisas) from lugar where status="abertas" group by = tipo
+  
   - BDI - API para consulta em bancos
   # https://db.rstudio.com/dbi/
   
   - DB Explorer
+  
   - RSQLite - dados parados em disco não incomodam a memória, então, uma ótima solução para quem tem computador de baixa capacidade.
   # https://www.sqlite.org/index.html
   # https://cran.r-project.org/web/packages/RSQLite/RSQLite.pdf
 
-*Chegamos no ápice da oficina*, agora que foram visualizados dados que já estavam em um banco, criaremos um conforme as nossas necessidades.
+*Chegamos ao ápice da oficina!!!*
+Agora que foram visualizados os dados que já estavam em um banco, criaremos um conforme as nossas necessidades.
 
-*Break*
+*Time to break*
+
 ## Criando o banco ou abrindo um existente
 
-Para criar um novo arquivo que receberá o banco ou ler um existente a sintaxe é a mesma e o código se encarrega de entender se o arquivo já existe ou não.
+Para criar um novo arquivo que receberá o banco ou ler um existente, a sintaxe é a mesma e o código se encarrega de entender se o arquivo já existe ou não.
 
 ```{r Conexao com o banco RSQLite}
 #Pasando para uma variável as instruções de conexao e driver - atencao para o nome do arquivo
 con <- dbConnect(RSQLite::SQLite(), "meu_primeiro_banco.db")
 ```
 
-Ao executar o chunk acima o R está conectado com este arquivo e usando a API do DBI pode passar instruções  para que o RSQLite processe, inclusive em SQL !
+Ao executar a linha de código acima, o R está conectado com este arquivo e usando a API do DBI para passar instruções, e o RSQLite processa, inclusive em SQL!
 
-Como temos um banco populado, alem de verificar com o dbExplorer, podemos verificar pelo R. Como a conexão acima já foi realizada ela está ativa e você pode passar a instrução diretamente, porem, ao final de seu código lembre sempre de fechar a conexão com o banco.
+Como temos um banco populado, além de verificar com o dbExplorer, podemos verificar pelo R. Como a conexão acima já foi realizada, ela está ativa e você pode passar a instrução diretamente, porém, ao final de seu código, lembre sempre de fechar a conexão com o banco.
 
 
 ```{r Verificando as tabelas do banco}
@@ -351,13 +356,13 @@ Como temos um banco populado, alem de verificar com o dbExplorer, podemos verifi
 dbListTables(con)
 ```
 
-Assim como fazemos no R podemos verificar quais campos esta tabela possui.
+Assim como fazemos no R, podemos verificar quais campos esta tabela possui.
 
 ```{r Verificando os campos da tabela empresa}
 dbListFields(con, "empresa")
 ```
 
-Vamos olhar os dados desta tabela 
+Vamos olhar os dados desta tabela:
 
 ```{r Verificando os dados da tabela empresa}
 primeira_query_empresa <-
@@ -366,9 +371,9 @@ primeira_query_empresa <-
 primeira_query_empresa
 ```
 
-Veja que abaixo do nome do campo o tipo dele é apresentado **<chr>**, o cuidado com o tipo de variável é extremamente importante.
+Veja que, abaixo do nome do campo, o tipo dele é apresentado **<chr>**. Lembre-se: o cuidado com o tipo de variável é extremamente importante para consultas e manipulações futuras.
 
-E quantos registros temos nesta tabela
+E quantos registros temos nesta tabela?
 
 ```{r Contando registros da tabela empresa}
 tic()
@@ -379,13 +384,13 @@ toc()
 
 contagem_registros_empresa
 ```
-Para varrer toda a tabela e contar todos os registros foi necessário um tempo, Leve em consideração este tempo para o desenho e estratégia das consultas.
+Para varrer toda a tabela e contar todos os registros foi necessário um tempo. Leve em consideração este tempo para o desenho e estratégia das consultas.
 
-Rapidamente, fizemos uma pequena exploratória no banco, temos mais de **44 milhões* de registos com 32 colunas cada. E temos mais duas tabelas em memória que usaremos para interagir com a tabela *empresa* 
+Rapidamente, fizemos uma pequena análise exploratória no banco, temos mais de *44 milhões* de registos com 32 colunas cada. E temos mais duas tabelas em memória que usaremos para interagir com a tabela *empresa*. Muita coisa? Para um computador de baixa capacidade...  
 
 ## Realizando carga dos data frames
 
-Como conseguimos realizar a leitura dos arquivos da dívida do **FGTS** vamos realizar a ingestão dele no banco.
+Como conseguimos realizar a leitura dos arquivos da dívida do **FGTS**, vamos realizar a ingestão deles no banco.
 
 ```{r Carga tabela divida_fgts}
 tic()
@@ -397,7 +402,7 @@ rm(leitura_direta_vroom)
 gc()
 ```
 
-Agora com duas tabelas, o cenário começa a ficar um pouco mais robusto, porem, sem carregar na memória, podemos inclusive excluir o data frame com os dados do fgts.
+Agora com duas tabelas, o cenário começa a ficar um pouco mais robusto, porém, **sem carregar na memória**, podemos inclusive excluir o data frame com os dados do FGTS.
 
 ```{r Verificando novamente as tabelas}
 # Verificando as tabelas
@@ -417,7 +422,7 @@ dbGetQuery(con, "select * from divida_fgts limit 10")
 toc()
 ```
  
-Falta uma tabela a `caged_movimentacao` inclusive ela tem uma boa quantidade de registros. Para fixar o conhecimento vamos realizar mais uma carga de dados. Aqui dependendo do seu computador a consulta pode demorar mais de 15 minutos!! 
+Falta uma tabela, a `caged_movimentacao`. Inclusive, ela tem uma boa quantidade de registros. Para fixar o conhecimento vamos realizar mais uma carga de dados. Aqui, dependendo do seu computador, a consulta pode demorar mais de 15 minutos!
 
 ```{r Carga tabela movimentacao_caged}
 tic()
@@ -428,9 +433,9 @@ toc()
 rm(caged_movimentacao)
 gc()
 ```
-O tempo de carga parece uma eternidade...
+O tempo de carga parece uma eternidade... Vamos colocar uma música? ;)
 
-Agora temos um banco com 3 tabelas completas de nossa oficina. Caso precise, por exemplo, disponibilizar os dados para estudo os mesmo já estão agrupados em um único arquivo. Você pode compactá-lo e disponibilizar e passar adiante.
+Agora temos um banco com 3 tabelas completas de nossa oficina. Caso precise, por exemplo, disponibilizar os dados para estudo, eles já estão agrupados em um único arquivo. Você pode compactá-lo, disponibilizar e passar adiante.
 
 **Verificar no dbExplorer**
 
@@ -440,10 +445,9 @@ dbListTables(con)
 
 ## Trabalhando as consultas
 
-As consultas acima em sql que foram realizadas equivalem a um `head()`, `nrow()` e `names()`, porem, precisamos filtrar os dados, trabalhar mais com eles.  
-Como primeira consulta realizaremos um filtro com campos existentes nas tabelas.
+As consultas acima que foram realizadas em sql equivalem a um `head()`, `nrow()` e `names()`. Porém, precisamos filtrar os dados e trabalhar um pouco mais com eles. Como primeira consulta, realizaremos um filtro com campos existentes nas tabelas.
 
-Antes de trabalhar o plano de ataque vamos realizar um aquecimento, realizando uma consula com um filtro das empresas que estão nesta base no DF.
+Antes de trabalhar no nosso plano de ataque, vamos realizar um aquecimento, realizando uma consulta com um filtro das empresas do DF que estão nesta base.
 
 ```{r Consulta base com filto na query divida_fgts}
 tic()
@@ -455,7 +459,7 @@ toc()
 No DF temos 6610 empresas com tratativas sobre o FGTS.
 
 
-Para a tabela de movimentação do caged verificaremos quantos linhas de movimentação foram realizadas este ano para o estado Rio de Janeiro. Caso não tenha visto no dicionário de dados na aba *uf* os estados estão codificados e o valor correspondente ao *Rio de Janeiro é 33*
+Para a tabela de movimentação do Caged, verificaremos quantas linhas de movimentação foram realizadas este ano para o estado Rio de Janeiro. Caso não tenha visto no dicionário de dados, os estados estão codificados na aba *uf*, e o valor correspondente ao *Rio de Janeiro é 33*.
 
 ```{r Consulta base com filto na query movimentacao_caged}
 tic()
@@ -463,9 +467,9 @@ dbGetQuery(con, "select * from movimentacao_caged where uf=33")
 toc()
 ```
 
-Mais de 1 milhão de registros de movimentações sobre os empregados, nesta consulta exigimos um pouco mais do computador, porem, carregar estes dados em memória.
+Mais de 1 milhão de registros de movimentações sobre os empregados. Nesta consulta exigimos um pouco mais do computador, porém, sem carregar estes dados em memória (senão, a ventuinha da máquinha atingiria mach 3).
 
-Para a tabela empresa seremos um pouco mais restritivos nos filtros pois é a tabela mais volumosa
+Para a tabela empresa, seremos um pouco mais restritivos nos filtros pois é a tabela mais volumosa:
 
 ```{r Consulta base com filto na query empresa}
 tic()
@@ -473,13 +477,13 @@ dbGetQuery(con, "select * from empresa where codigo_municipio=5819")
 toc()
 ```
 
-Em Campo dos Goytacazes foram retornadas 92572 empresas pela consulta.
+Em Campos dos Goytacazes foram retornadas 92572 empresas pela consulta.
 
 ### R + RSQLite
 
-Até o momento o R foi usado somente para passar as consultas ao RSQLite. Como próximo passo realizaremos uma consulta passando uma variável do ambiente do R.
+Até o momento, o R foi usado somente para passar as consultas ao RSQLite. Como próximo passo, realizaremos uma consulta passando uma variável do ambiente do R.
 
-Duas tabelas contam com o **CNAE - Classificação Nacional de Atividade Econômica** em seus dados a **movimento_caged** com o nome do campo de *subclasse* e a tabela **empresas** com o nome do campo *cnae_fiscal*. Faremos uma consulta na tabela em dos dados do CAGED com uma variável que receberá os seguintes CNAES:
+Duas tabelas contam com o **CNAE - Classificação Nacional de Atividade Econômica** em seus dados a **movimento_caged** com o nome do campo de *subclasse* e a tabela **empresas** com o nome do campo *cnae_fiscal*. Faremos uma consulta na tabela dos dados do CAGED com uma variável que receberá os seguintes CNAES:
 
 * 8230001 - Serviços de Organização de Feiras, Congressos, Exposições e Festas
 * 8230002 - Casas de Festas e Eventos
@@ -488,7 +492,7 @@ Duas tabelas contam com o **CNAE - Classificação Nacional de Atividade Econôm
 selecao_cnae <- c('8230001','8230002')
 ```
 
-Na tabela `movimento_caged` consultaremos qual a movimentação de trabalhadores no estado da Bahia = 29 dos segmentos de CNAE selecionados.
+Na tabela `movimento_caged` consultaremos qual a movimentação de trabalhadores no estado da Bahia, uf = 29, dos segmentos de CNAE selecionados.
 
 ```{r Consulta base com filtro em variavel caged }
 tic()
@@ -500,9 +504,9 @@ dbGetQuery(
 toc()
 ```
 
-Foram computador 833 registros com estes filtros.
+Foram computados 833 registros com estes filtros.
 
-Aumentando as possibillidades iremos realizar uma consulta que trará a quantidade de empresas ativas baseado no atributo UF da tabela *empresa*. Será realizada a contagem de quantas empresas estão ativas (situacao_cadastral = 2 ) nos estados do Acre - AC, Mato Grosso - MT e Ceará - CE .
+Aumentando as possibillidades, iremos realizar uma consulta que trará a quantidade de empresas ativas baseado no atributo UF da tabela *empresa*. Será realizada a contagem de quantas empresas estão ativas (situacao_cadastral = 2 ) nos estados do Acre - AC, Mato Grosso - MT e Ceará - CE .
 
 ```{r Consulta a base com sumario empresa}
 tic()
@@ -515,7 +519,7 @@ toc()
 
 ### Query com subquery
 
-Temos a seguinte situação: Faremos um resumo por CNAEs selecionados em todas as bases de dados, porem duas de 3 bases de dados possuem o CNAE em seus atributos *empresa e movimentacao_caged*. A tabela *empresa* possui a relação de todas as empresas e cnaes, usaremos o cnpj para levar o cnae desta tabela para a *divida_fgts* usando o CNPJ como referência e armazenaremos o resultado em uma tabela paralela para não ter que varrer toda a tabela *empresa*
+Temos a seguinte situação: Faremos um resumo por CNAEs selecionados em todas as bases de dados, porém, duas de 3 bases de dados possuem o CNAE em seus atributos *empresa e movimentacao_caged*. A tabela *empresa* possui a relação de todas as empresas e cnaes, usaremos o cnpj para levar o cnae desta tabela para a *divida_fgts* usando o CNPJ como referência e armazenaremos o resultado em uma tabela paralela para não ter que varrer toda a tabela *empresa*.
 
 **CNAES: **
 
@@ -523,9 +527,9 @@ Temos a seguinte situação: Faremos um resumo por CNAEs selecionados em todas a
 * 8230001 - Serviços de Organização de Feiras, Congressos, Exposições e Festas
 * 4754701 - Comércio Varejista de Móveis
 
-Os resultados das consutas serão retornadas em variáveis do ambiente do R.
+Os resultados das consultas serão retornadas em variáveis do ambiente do R.
 
-Vamos consultar a tabela *movimentacao_caged*
+Vamos consultar a tabela *movimentacao_caged*:
 
 ```{r Sumario por cnae}
 tic()
@@ -540,7 +544,7 @@ toc()
 resultado_movimentacao_caged
 ``` 
 
-Agora faremos a cosulta na tabela *empresa* com os mesmos CNAES
+Agora, faremos a consulta na tabela *empresa* com os mesmos CNAES:
 
 ```{r Sumario por cnae_empresa}
 tic()
@@ -566,7 +570,7 @@ dbSendQuery(
 toc()
 ```
 
-Agora que temos uma relação de *cnpj vs cnae* podemos usá-la como subconsulta na tabela *divida_fgts*
+Agora que temos uma relação de *cnpj vs cnae* podemos usá-la como subconsulta na tabela *divida_fgts*:
 
 ```{r Sumario por CNAE divida_fgts}
 tic()
@@ -582,7 +586,7 @@ toc()
 resultado_saldo_divida
 ```
 
-Com todos os resultados depositados em variável e para quem estava com saudade de código em R segue.
+Com todos os resultados depositados em variável (e para quem estava com saudade de código em R), segue:
 
 ```{r Montando o resultado final}
 tic()
@@ -607,36 +611,36 @@ Analisando nossa jornada:
 * trouxemos os resultados em memória;
 * trabalhamos com os resultados da memória.
 
+Ao invés de chicotear a máquina, dando mais tarefas do que ela consegue suportar, fomos gentis e respeitamos suas limitações :)
 
 Agradecemos por acompanhar esta jornada até o final.
 
 
 
-# Existe outra alternativa  - Bonus?
+# Bônus: Existe outra alternativa?
 
-OK, fizemos algumas querys, mas... "João não estou familiarizado com sql", sei usar R.
+OK, fizemos algumas querys, mas... "João não estou familiarizado com sql, sei usar R". 
+A Patrícia iria dizer: dá uma chance para o SQL... Mas se vc quer continuar com o R, está aí o **Bônus Track!**
 
-Existe outra alternativa a biblioteca `dbplyr` te ajudará a conversar com o banco de uma forma "mais R"
+Existe outra alternativa, a biblioteca `dbplyr`, que te ajudará a conversar com o banco de uma forma "mais R", por assim dizer.
 
-Vamos criar um vinculo com a tabela *divida_fgts*
-
-Você usará o mesmo parâmetro de conexão `con` para dizer em "qual lingua" você vai conversar com este banco
+Vamos criar um vinculo com a tabela *divida_fgts*. Você usará o mesmo parâmetro de conexão `con` para dizer em "qual lingua" você vai conversar com este banco:
 
 ```{r DBPlyr Criando vinculo com o banco}
 #Passamos para uma variável uma funcao do dplyr tbl para conversar com a tabela divida_fgts no banco
 divida_fgts_rsqlite <- tbl(con,"divida_fgts")
 ```
 
-Este vinculo funciona como uma conexão com o banco, portanto poderemos executar consultas nesta tabela que foi referenciada.
+Este vinculo funciona como uma conexão com o banco, portanto, poderemos executar consultas nesta tabela referenciada.
 
-Vamos verificar os campos da tabela
+Primeiro, vamos verificar os campos da tabela:
 
 ```{r DBPlyr head no FGTS}
 divida_fgts_rsqlite %>%
   head()
 ```
 
-Vamos simular a mesma consulta que fizemos anteriormente usando sql, fitraremos os registros do DF, a consulta havia retornado 6610 registros, vamos ver se funciona.
+Vamos simular a mesma consulta que fizemos anteriormente usando sql. Filtraremos os registros do DF, a consulta havia retornado 6610 registros, vamos ver se funciona.
 
 ```{r DBplyr consulta fgts no DF}
 divida_fgts_rsqlite %>%
@@ -644,7 +648,7 @@ divida_fgts_rsqlite %>%
  count()
 ```
 
-A quantidade bateu, é possível passar este resultado para uma variável para algum trablhar conforme fariamos no R
+A quantidade bateu, é possível passar este resultado para uma variável para trabalhar, conforme faríamos no R.
 
 ```{r DBPlyr retorno dos resultados}
 retorno_divida_fgts <- divida_fgts_rsqlite %>%
@@ -653,22 +657,20 @@ retorno_divida_fgts <- divida_fgts_rsqlite %>%
 as.data.frame(retorno_divida_fgts)
 ```
 
-Agora na tabela empresa que tem a maior quantidade de registros, vamos trazer alguns registros também.
-
-Primeiro vamos referenciar a tabela com a conexão com o banco
+Agora, na tabela empresa (que tem a maior quantidade de registros), vamos consultar alguns registros também. Vamos referenciar a tabela com a conexão com o banco:
 
 ```{r DBPlyr criando vinculo com o banco empresa}
 empresa_rsqlite <- tbl(con,"empresa")
 ```
 
-Não podemos deixar de matar nossa curiosidade se vai funcionar
+Não podemos deixar de matar nossa curiosidade... Vai funcionar?
 
 ```{r DBplyr consulta empresas }
 empresa_rsqlite %>%
   count()
 ```
 
-Há!!!! Parece que os numeros são os mesmos, novamente vamos testar nossos computadores, passaremos uma consulta de sumário na tabela empresa
+Há!!!! Parece que os numeros são os mesmos, novamente vamos testar nossos computadores, passaremos uma consulta de sumário na tabela empresa:
 
 ```{r DBPlyr sumario na tabela empresa}
 tic()
@@ -681,15 +683,15 @@ sumario_empresa_cnae
 toc()
 ```
 
-Sabemos que vocÊs tiveram uma overdose de **sql**, mas para não perder o costume vamos olhar o que está acontecendo na cozinha...
+Sabemos que vocês tiveram uma overdose de **SQL**, mas, para não perder o costume, vamos olhar o que está acontecendo nos bastidores...
 
 ```{r DBPlyr vendo a query}
 sumario_empresa_cnae %>% show_query()
 ```
 
-Parece que temos a boa e velha consulta em sql acontecendo por trás dos panos. 
+Parece que temos a boa e velha consulta em SQL acontecendo por trás dos panos. 
 
-vamos dar mais uma olhadinha na tabela *movimentacao_caged* que tem mais de 16 milhões de registros.
+vamos dar mais uma olhadinha na tabela *movimentacao_caged*, que tem mais de 16 milhões de registros.
 
 
 ```{r DBPlyr Criando vinculo com o caged}
@@ -698,14 +700,14 @@ movimentacao_caged_rsqlite <- tbl(con,"movimentacao_caged")
 ```
 
 
-Não podemos deixar de contar a quantidade de registros
+Não podemos deixar de contar a quantidade de registros:
 
 ```{r DBPlyr consulta movimentação_caged}
 movimentacao_caged_rsqlite %>%
   count()
 ```
 
-Coincidentemente os números bateram, agora vamos dar uma olhada nas primeiras linhas
+"Coincidentemente" os números bateram, agora vamos dar uma olhada nas primeiras linhas.
 
 ```{r DBPlyr Retorno dos resultados}
 
@@ -730,7 +732,9 @@ movimentacao_caged_rsqlite %>%
   
 ```
 
-Pronto, agora você pode escolher a melhor forma de fazer as suas consultas, usando sql diretamente ou o dbplyr.
+Pronto! Agora você pode escolher a melhor forma de fazer as suas consultas, usando sql diretamente ou o dbplyr.
+
+Esperamos que tenha gostado dos códigos bônus!
 
 
 
