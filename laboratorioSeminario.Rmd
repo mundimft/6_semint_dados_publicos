@@ -35,6 +35,7 @@ Baixe os arquivos do [git](https://github.com/mundimft/6_semint_dados_publicos)
   - [Dicionário de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx)
   
 * [PGFN](http://dadosabertos.pgfn.gov.br/)
+  - O link do dicionário de dados está quebrado :(
 
 # Importante! Caso tenha atualizado o R para a versão 4, fique atento e siga esses passos:
 
@@ -619,6 +620,8 @@ Agradecemos por acompanhar esta jornada até o final.
 
 
 # Bônus: Existe outra alternativa?
+
+Sim, existem várias!
 
 OK, fizemos algumas querys, mas... "João não estou familiarizado com sql, sei usar R". 
 A Patrícia iria dizer: dá uma chance para o SQL... Mas se vc quer continuar com o R, está aí o **Bônus Track!**
