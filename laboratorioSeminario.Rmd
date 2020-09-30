@@ -24,7 +24,7 @@ Crie um projeto chamado *6_semint_dados_publicos*
 
 Descompacte a base *meu_primeiro_banco.zip* nesta pasta 
 
-Baixe os arquivos do [git](colocar aqui)
+Baixe os arquivos do [git](https://github.com/mundimft/6_semint_dados_publicos)
 
 ## Bases de dados que utilizamos
 
@@ -584,6 +584,7 @@ GROUP by cnae_fiscal"
   )
 toc()
 resultado_saldo_divida
+dbDisconnect(con)#lembre-se de desconectar do banco depois de trabalhar com ele
 ```
 
 Com todos os resultados depositados em variável (e para quem estava com saudade de código em R), segue:
