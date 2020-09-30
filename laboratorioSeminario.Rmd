@@ -16,43 +16,22 @@ knitr::opts_chunk$set(echo = TRUE)
 * Descompactador de arquivos
 * Download do [R Base](https://cran.r-project.org/bin/windows/base/) atualizado (4.0.2) - *tem se mostrado mais rápido*;
 
-## Principais Bibliotecas
+# Preparando o ambiente
 
-* vroom
-* RSqlite
-* tidyverse
-* data.table
+Você já baixou a base?? 
 
-```{r ativando as bibliotecas, warning=FALSE}
-#Criar um loop aqui
-if(!require('vroom')){
-  install.packages("vroom")
-  library(vroom)
-}
+Crie um projeto chamado 6_semint_dados_publicos
 
-if(!require('RSQLite')){
-  install.packages("RSQLite")
-  library(RSQLite)
-}
+Descompacte a base *meu_primeiro_banco.zip nesta pasta 
 
-if(!require('tidyverse')){
-  install.packages("tidyverse")
-  library(tidyverse)
-}
-
-if(!require('data.table')){
-  install.packages("data.table")
-  library(data.table)
-}
-```
-
+Baixe os arquivos do [git](colocar aqui)
 
 ## Bases de dados que utilizamos
 
 * [RFB](https://receita.economia.gov.br/orientacao/tributaria/cadastros/cadastro-nacional-de-pessoas-juridicas-cnpj/dados-publicos-cnpj)
   - [Dicionário de dados](http://200.152.38.155/CNPJ/LAYOUT_DADOS_ABERTOS_CNPJ.pdf)
   
-* [SEPT - Secretaia Especial de Previdência e Trabalho](http://pdet.mte.gov.br/microdados-rais-e-caged) - **Novo Caged 2020**
+* [SEPT - Secretaria Especial de Previdência e Trabalho](http://pdet.mte.gov.br/microdados-rais-e-caged) - **Novo Caged 2020**
   - [Dicionário de dados](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/Layout%20Novo%20Caged%20Movimenta%E7%E3o.xlsx)
   
 * [PGFN](http://dadosabertos.pgfn.gov.br/)
@@ -66,6 +45,34 @@ if(!require('data.table')){
   - Adicione a variável de ambiente no R para que o Rtools4 funcione: `writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")`  
 
 * 3) Se em alguns pacotes apresentarem erro de depêndencia, tente usar o  `install.packages("nome do pacote", dependencies = TRUE)`
+
+
+## Principais Bibliotecas
+
+* vroom
+* RSqlite
+* tidyverse
+* BDI
+
+
+```{r ativando as bibliotecas, warning=FALSE}
+#Criar um loop aqui
+library(RCurl)
+library(vroom)
+library(data.table)
+library(RSQLite)
+library(DBI)
+library(tictoc)
+library(fs)
+library(pryr)
+library(stringi)
+library(stringr)
+library(dplyr)
+library(arkdb)
+library(tm)
+library(dbplyr)
+```
+
 
 ## Para quem só sabe usar martelo, **TODO PROBLEMA É UM PREGO** - *Abraham Maslow*
 <div style="text-align: justify">
@@ -84,7 +91,8 @@ E aí, até conseguir provisionar alguma instância, pedir mais memória, ou con
 
 <div/>
 
-# Agora sim chegou a hora .... Mãos na massa!
+*Break*
+# Agora sim chegou a hora .... Mãos na massa! 
 
 **Plano de ataque**
 
@@ -108,7 +116,7 @@ As base de dados da [PGFN](http://dadosabertos.pgfn.gov.br/) contém os dados do
 
 Será criada uma pasta para armazenar estes downloads para facilitar a posteior leitura:
 
-```{r Download dados PGFN, eval=FALSE}
+```{r Download dados PGFN}
 ## Dados de dividas
 #diretorio para amazenamento
 dir.create("./divida")
@@ -125,7 +133,7 @@ Foram baixados 13 Mb de dados compactados
 
 Os microdados do [CAGED](ftp://ftp.mtps.gov.br/pdet/microdados/NOVO%20CAGED/Movimenta%E7%F5es/2020/) são fornecidos ao público por um ftp aberto em que os dados são dispostos em pastas por mês e cada pasta contem arquivos em formato **.7z** :( de todo o ano calendário. Faremos a leitura de todo o diretório e o download dos arquivos em pasta específica do tema.
 
-```{r Download dados CAGED, eval=FALSE}
+```{r Download dados CAGED}
 #Dados do CAGED
 #diretorio para armazenamento
 dir.create("./caged")
@@ -174,7 +182,7 @@ Com os dados baixados, começa a jornada para de lê-los e ajustá-los e vice-ve
 
 O arquivo com os dados da PGFN com as dívidas do FGTS será lido e passado para um data.frame, usaremos o pacote *vroom* 
 
-```{r Leitura dados PGFN, eval= FALSE }
+```{r Leitura dados PGFN}
 #primeira pegadinha, o VROOM pode ser muito rápido, porem se você tiver multiplos arquivos dentro do zip ele precisa de uma ajudinha
 dados_fgts_com_vroom <- vroom("./divida/Dados_abertos_FGTS.zip") # aqui temos 1170 Observacoes 
 
@@ -187,7 +195,7 @@ nrow(dados_fgts_com_vroom)
 Conforme apresentado, o arquivo compactado que estamos tratando possui um *.csv* para cada estado e a quantidade de **1170** observações não parece condizer com a quantidade de empresas inscritas em divida no FGTS. Além disso, os caracteres quebrados podem dificultar as manipulações dos dados. A base foi disponiblizada com caracteres latinos (ç,õ,é, ...), e precisaremos informar isso para o pacote para conseguir a visualização adequada. 
 Outro detalhe: precisaremos criar uma função que irá ler todos os arquivos dentro do *.zip*, passar cada 1 para o *vroom* e, por fim, incluir em um data.frame.
 
-```{r Leitura dados FGTS, eval= FALSE}
+```{r Leitura dados FGTS}
 ##Instrução para ler os caractereres corretamente:
 locale_padrao_pt <- locale("pt", encoding = "latin1")
 
@@ -204,7 +212,6 @@ leitura_direta_vroom <- ler_arquivos_dentro_zip("./divida/Dados_abertos_FGTS.zip
 toc()
 ```
 
-**TROCAR PARA DATA.TABLE**
 
 Agora que cada arquivo foi passado ao *vroom* e incluído em um data.frame, contabilizamos mais de 440 mil observações, bem diferente do primeiro valor contabilizado, não é?
 
@@ -221,6 +228,8 @@ Nestes dados, o campo **CPF_CNPJ** está com a máscara, e para a realização d
 ```{r Retirar máscara do CNPJ}
 #funcao do pacote tm que remove pontuacao
 removePunctuation(leitura_direta_vroom$CPF_CNPJ) -> leitura_direta_vroom$CPF_CNPJ
+
+head(leitura_direta_vroom)
 ```
 
 
@@ -246,7 +255,7 @@ names(caged_movimentacao)
 Realizamos a leitura de mais de 16 milhões de linhas com 24 colunas (Nuh!) e a carga de mais dados pode começar a ficar difícil. Dando continuidade, trataremos os nomes das colunas retirando os espaços e acentuação. Assim, vamos conseguir trabalhar com estes dados.
 
 
-```{r Tratando nomes das colunas CAGED, eval= FALSE}
+```{r Tratando nomes das colunas CAGED}
 #Tratando os nomes
 caged_movimentacao %>%
   names() %>% #pega os nomes das colunas
@@ -309,18 +318,20 @@ dbDisconnect(con)
 Os dados vão aparecendo, a necessidade de agregar mais variáveis ou pegar algum atributo de outra base e chega uma hora que não se tem mais memória para o R trabalhar ou carregar mais dados, somente a base de cnpj´s em um único arquivo compactado tem 2.4Gb ao descompactá-lo são mais de 8Gb que você deveria carregar na memória.
 
 # SQLITE
-PATRICIA  
+ 
   - SQL (a sintaxe) - igual papo doméstico `selecione e conte as coisas do lugar que estão abertas e agrupe por tipo`! :)
   - -> select count(coisas) from lugar where status="abertas" group by = tipo
   - BDI - API para consulta em bancos
   # https://db.rstudio.com/dbi/
   
+  - DB Explorer
   - RSQLite - dados parados em disco não incomodam a memória, então, uma ótima solução para quem tem computador de baixa capacidade.
   # https://www.sqlite.org/index.html
   # https://cran.r-project.org/web/packages/RSQLite/RSQLite.pdf
 
-Chegamos no ápice da oficina, agora que foram visualizados dados que já estavam em um banco, criaremos um conforme as nossas necessidades.
+*Chegamos no ápice da oficina*, agora que foram visualizados dados que já estavam em um banco, criaremos um conforme as nossas necessidades.
 
+*Break*
 ## Criando o banco ou abrindo um existente
 
 Para criar um novo arquivo que receberá o banco ou ler um existente a sintaxe é a mesma e o código se encarrega de entender se o arquivo já existe ou não.
@@ -557,7 +568,7 @@ toc()
 
 Agora que temos uma relação de *cnpj vs cnae* podemos usá-la como subconsulta na tabela *divida_fgts*
 
-```{r Sumario por CNAE divida_fgts, error=TRUE}
+```{r Sumario por CNAE divida_fgts}
 tic()
 resultado_saldo_divida <-
   dbGetQuery(
@@ -581,8 +592,27 @@ toc()
 ```
 
 
+# Finalização
 
-#Existe outra alternativa ?
+Analisando nossa jornada:
+
+* baixamos uma boa quantidade de dados;
+* extraimos os dados;
+* corrigimos alguns detalhes;
+* montamos as bases de dados;
+* criamos um banco de dados;
+* populamos o banco com mais informações;
+* realizamos consultas na base sem encher a memória;
+* tratamos de diferentes abordagens para as buscas;
+* trouxemos os resultados em memória;
+* trabalhamos com os resultados da memória.
+
+
+Agradecemos por acompanhar esta jornada até o final.
+
+
+
+# Existe outra alternativa  - Bonus?
 
 OK, fizemos algumas querys, mas... "João não estou familiarizado com sql", sei usar R.
 
@@ -701,94 +731,8 @@ movimentacao_caged_rsqlite %>%
 ```
 
 Pronto, agora você pode escolher a melhor forma de fazer as suas consultas, usando sql diretamente ou o dbplyr.
-#Finalização
-
-Analisando nossa jornada:
-
-* baixamos uma boa quantidade de dados;
-* extraimos os dados;
-* corrigimos alguns detalhes;
-* montamos as bases de dados;
-* criamos um banco de dados;
-* populamos o banco com mais informações;
-* realizamos consultas na base sem encher a memória;
-* tratamos de diferentes abordagens para as buscas;
-* trouxemos os resultados em memória;
-* trabalhamos com os resultados da memória.
-
-
-Agradecemos por acompanhar esta jornada até o final, esperamos que tenham acumulado algum conhecimento.
-
-O nosso muito obrigado!
-
-
-
-
-Criar as seguintes situações
-
-realizar filtro com query direta ´where xxx = xx´
-realizar filtro com variável do R
-preparar o terreno para uma query em uma grande tabela
-  query com subquery
-
-relizar query limitando a quantidade de campos que são retornados
-  
-Reapresentar o select count 
-Fazer consultas com o group by
 
 
 
 
 
-8230001, 5620102, 7220004, 8230001,
-
-resultado das querys para trabalhar no R
-
-
-
-
-
-Baixado os dados 
-
-<div/>
-  
-* Download 
-  -  
-    - Baixando 1 arquivo  
-    - Baixando multiplos arquivos  
-      - usando `for` para baixar muitos arquivos 
-* Leitura (usar microbench para avaliar os métodos de entrada)  
-  -  
-    - Lendo 1 arquivo (data.table, vroom)
-      -object.size() - ver o tamanho dos itens em memória
-    - Lendo multiplos arquivos (cuidado com o tamanho do arquivo!!) 
-      - usando `for` para ler multiplos arquivos
-  
-* A memória encheu... E agora?!
-  -  
-  - SQL (a sintaxe) - igual papo doméstico `selecione e conte as coisas do lugar que estão abertas e agrupe por tipo`! :)
-  - -> select count(coisas) from lugar where status="abertas" group by = tipo
-  - BDI - API para consulta em bancos
-  # https://db.rstudio.com/dbi/
-  
-  - RSQLite - dados parados em disco não incomodam a memória, então, uma ótima solução para quem tem computador de baixa capacidade.
-  # https://www.sqlite.org/index.html
-  # https://cran.r-project.org/web/packages/RSQLite/RSQLite.pdf
-  
-    - Explicando o Banco
-    - Visualizando os dados (DB Explorer)
-    - Visualizando os dados do banco (pragma do banco, tabela etc)
-    - Visalizando os dados no banco (evitar full-scan) `LIMIT X`
-    - Fazendo a ingestão dos dados - 1 data frame;
-        * Salvando a query em uma nova tabela (para usar como subquery por exemplo);
-        * Salvando a consulta em um data.frame (usar em subquery ou realiza análise no R);
-    - Fazendo a ingestão dos dados 1 arquivo
-    - Criando a tabela de itens a serem filtrados
-      - Fazendo a ingestão dos dados (multiplos arquivos);
-          - Jogando na memória;
-          - Imputando os arquivos `APPEND`;
-            - Passando pela memória (oneroso) sei fazer;
-            - Fazendo a ingestão direta, estou no caminho;
-  - Me deram conexão para um banco com muitas linhas e muitos recursos (o_O)(mostrar no Oracle) 
-  - Bonus Track - DuckDB (banco otimizado para uso analítico) - Não sei se vou conseguir implantar a tempo.
-          
